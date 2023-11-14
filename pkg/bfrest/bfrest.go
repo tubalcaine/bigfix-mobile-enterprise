@@ -16,4 +16,7 @@ type Bfrest struct {
     URL           string          // String
     Payload       string          // String
     Transaction   TransactionType // Custom type for transaction
+	
+	
 }
+
