@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"crypto/tls"
+	"encoding/xml"
+	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
 
 const (
@@ -53,7 +55,7 @@ func getDataFromAPI(url, username, password string) ([]byte, error) {
 func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
-	
+
 	url := "https://10.10.220.60:52311/api/computers" // Replace with your actual URL
 	username := "IEMAdmin"               // Replace with your actual username
 	password := "BigFix!123"               // Replace with your actual password
@@ -66,4 +68,17 @@ func main() {
 
 	// Data contains the raw XML payload.
 	fmt.Printf("Raw XML Data: %s\n", string(data))
+
+	// Unmarshal the XML data into Go structures
+	var computers bfrest.BESAPI
+	err = xml.Unmarshal(data, &computers)
+	if err != nil {
+		fmt.Printf("Error unmarshaling XML data: %v\n", err)
+		return
+	}
+
+	// Print the first computer name
+	if len(computers.Computer) > 0 {
+		fmt.Printf("First computer name: %d\n", computers.Computer[0].ID)
+	}
 }
