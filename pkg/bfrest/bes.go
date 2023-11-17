@@ -494,25 +494,3 @@ type BES struct {
 		Title             string   `xml:"Title"`
 	} `xml:"Task"`
 }
-
-type BESAPI struct {
-	LDAPDirectory struct {
-		Resource          string `xml:"Resource,attr"`
-		BaseDN            string `xml:"BaseDN"`
-		GroupFilter       string `xml:"GroupFilter"`
-		ID                int    `xml:"ID"`
-		IsActiveDirectory bool   `xml:"IsActiveDirectory"`
-		IsGlobalCatalog   bool   `xml:"IsGlobalCatalog"`
-		Name              string `xml:"Name"`
-		Servers           struct {
-			Server struct {
-				Host     string `xml:"Host"`
-				Port     int    `xml:"Port"`
-				Priority int    `xml:"Priority"`
-			} `xml:"Server"`
-		} `xml:"Servers"`
-		UIDAttribute string `xml:"UIDAttribute"`
-		UseSSL       bool   `xml:"UseSSL"`
-		UserFilter   string `xml:"UserFilter"`
-	} `xml:"LDAPDirectory"`
-}
