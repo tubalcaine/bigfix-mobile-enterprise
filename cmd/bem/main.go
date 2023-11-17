@@ -1,19 +1,19 @@
 package main
 
-
 import (
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"crypto/tls"
 	"encoding/xml"
+	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
 
 const (
 	app_version = "0.0"
-	app_name = "bem"
-	app_desc = "BigFix Enterprise Mobile Server"
+	app_name    = "bem"
+	app_desc    = "BigFix Enterprise Mobile Server"
 )
 
 // getDataFromAPI makes a GET request to the specified URL with HTTP Basic Authentication
@@ -25,7 +25,7 @@ func getDataFromAPI(url, username, password string) ([]byte, error) {
 	}
 
 	client := &http.Client{Transport: tr}
-	
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %v", err)
@@ -44,7 +44,7 @@ func getDataFromAPI(url, username, password string) ([]byte, error) {
 		return nil, fmt.Errorf("received non-200 response status: %d - %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
@@ -57,8 +57,8 @@ func main() {
 	fmt.Println("Version " + app_version)
 
 	url := "https://10.10.220.60:52311/api/computers" // Replace with your actual URL
-	username := "IEMAdmin"               // Replace with your actual username
-	password := "BigFix!123"               // Replace with your actual password
+	username := "IEMAdmin"                            // Replace with your actual username
+	password := "BigFix!123"                          // Replace with your actual password
 
 	data, err := getDataFromAPI(url, username, password)
 	if err != nil {
