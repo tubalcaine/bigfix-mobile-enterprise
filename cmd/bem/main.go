@@ -56,6 +56,10 @@ func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
+	cpool, _ := bfrest.NewConnectionPool("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
+
+	fmt.Printf("Pool has %d connections.\n", cpool.GetAvailableConnections())
+
 	url := "https://10.10.220.60:52311/api/computers" // Replace with your actual URL
 	username := "IEMAdmin"                            // Replace with your actual username
 	password := "BigFix!123"                          // Replace with your actual password

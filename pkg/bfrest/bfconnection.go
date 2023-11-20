@@ -3,13 +3,13 @@ package bfrest
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 )
 
 // BFConnection represents a connection configuration.
 type BFConnection struct {
 	URL      string
-	Port     int
 	Username string
 	Password string
 	Conn     http.Client
@@ -23,24 +23,29 @@ type ConnectionPool struct {
 }
 
 // NewConnectionPool creates and initializes a new ConnectionPool instance.
-func NewConnectionPool() *ConnectionPool {
+func NewConnectionPool(url string, username string, password string) (*ConnectionPool, error) {
 	pool := &ConnectionPool{
 		connections: make([]*BFConnection, 0),
 		channel:     make(chan *BFConnection),
 	}
 
-	// Initialize the pool with 5 BFConnections.
 	for i := 0; i < 5; i++ {
-		connection := createBFConnection()
+		connection, err := createBFConnection(url, username, password)
+
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
 		pool.connections = append(pool.connections, connection)
 		pool.channel <- connection
 	}
 
-	return pool
+	return pool, nil
 }
 
 // createBFConnection creates a new BFConnection instance.
-func createBFConnection() *BFConnection {
+func createBFConnection(urlStr string, username string, password string) (*BFConnection, error) {
 	// Initialize the http.Transport. You might want to customize this based on your requirements.
 	transport := http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -53,13 +58,12 @@ func createBFConnection() *BFConnection {
 
 	// Return a new BFConnection with the provided details.
 	return &BFConnection{
-		URL:      "",
-		Port:     0,
-		Username: "",
-		Password: "",
+		URL:      urlStr,
+		Username: username,
+		Password: password,
 		Conn:     client,
 		tr:       &transport,
-	}
+	}, nil
 }
 
 // GetAvailableConnections returns the number of available BFConnections.
