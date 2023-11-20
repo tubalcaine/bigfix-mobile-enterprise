@@ -3,6 +3,7 @@ package bfrest
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 )
@@ -13,6 +14,29 @@ type BFConnection struct {
 	Username string
 	Password string
 	Conn     http.Client
+}
+
+// Get sends a GET request to the specified URL and returns the response body as a string.
+func (c *BFConnection) Get() (string, error) {
+	req, err := http.NewRequest("GET", c.URL, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.Conn.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }
 
 // createBFConnection creates a new BFConnection instance.
