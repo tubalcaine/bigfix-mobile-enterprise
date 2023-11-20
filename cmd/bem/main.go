@@ -72,6 +72,8 @@ func main() {
 
 	cpool.Release(conn)
 
+	fmt.Printf("Connection pool has %d items\n", cpool.Len())
+
 	// Unmarshal the XML data into Go structures
 	var computers bfrest.BESAPI
 	err = xml.Unmarshal(data, &computers)
