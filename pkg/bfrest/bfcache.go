@@ -24,21 +24,27 @@ type BigFixCache struct {
 
 var cacheInstance *BigFixCache
 
-func (cache BigFixCache) Get(url, username, passwd string) (*CacheItem, Error) {
-	baseURL := parseBaseURL(url)
-
+func GetCacheInstance() *BigFixCache {
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
 			serverCache: make(map[string]*BigFixServerCache),
 			maxAge:      300,
 		}
 	}
+	return cacheInstance
+}
+
+func Get(url, username, passwd string) (*CacheItem, error) {
+	baseURL := parseBaseURL(url)
+	cache := GetCacheInstance()
 
 	if cache.serverCache[baseURL] == nil {
+		newpool, _ := NewPool(baseURL, username, passwd, 5)
+
 		cache.serverCache[baseURL] = &BigFixServerCache{
 			serverName: baseURL,
-			cpool:      bfrest.NewPool(baseURL, username, passwd, 5),
-			cacheMap:   make(map[string]CacheItem),
+			cpool:      newpool,
+			cacheMap:   make(map[string]*CacheItem),
 			maxAge:     cache.maxAge,
 		}
 	}
@@ -47,19 +53,19 @@ func (cache BigFixCache) Get(url, username, passwd string) (*CacheItem, Error) {
 
 	// If the result doesn't exist or is too old, pull it from the server
 	if serverCache.cacheMap[url] == nil {
-		conn := serverCache.cpool.Acquire()
-		defer conn.Release()
+		conn, err := serverCache.cpool.Acquire()
 
-		rawXML, err := conn.Get(url)
-		serverCache.cacheMap[url] = &CacheItem{
-			timestamp: time.Now().Unix(),
-			rawXML:    rawXML,
+		if err != nil {
+			return nil, err
 		}
-	} else if time.Now().Unix()-serverCache.cacheMap[url].timestamp > serverCache.maxAge {
-		conn := serverCache.cpool.Acquire()
-		defer conn.Release()
+
+		defer serverCache.cpool.Release(conn)
 
 		rawXML, err := conn.Get(url)
+
+		if err != nil {
+			return nil, err
+		}
 
 		serverCache.cacheMap[url] = &CacheItem{
 			timestamp: time.Now().Unix(),
@@ -67,7 +73,7 @@ func (cache BigFixCache) Get(url, username, passwd string) (*CacheItem, Error) {
 		}
 	}
 
-	return &serverCache.cacheMap[url], nil
+	return serverCache.cacheMap[url], nil
 }
 
 func parseBaseURL(url string) string {

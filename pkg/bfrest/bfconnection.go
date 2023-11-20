@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -17,8 +18,19 @@ type BFConnection struct {
 }
 
 // Get sends a GET request to the specified URL and returns the response body as a string.
-func (c *BFConnection) Get() (string, error) {
-	req, err := http.NewRequest("GET", c.URL, nil)
+
+func (c *BFConnection) Get(urlStr string) (string, error) {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return "", err
+	}
+
+	// Compare the non-directory components of the BFConnection URL and the parsed URL
+	if c.URL != parsedURL.Scheme+"://"+parsedURL.Host {
+		return "", fmt.Errorf("URL does not match")
+	}
+
+	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		return "", err
 	}
