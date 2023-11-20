@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -18,26 +17,21 @@ const (
 
 // getDataFromAPI makes a GET request to the specified URL with HTTP Basic Authentication
 // and returns the raw data payload and an error if any.
-func getDataFromAPI(url, username, password string) ([]byte, error) {
-	// Skip certificate verification (use with caution)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{Transport: tr}
-
-	req, err := http.NewRequest("GET", url, nil)
+func getDataFromAPI(conn *bfrest.BFConnection, resource string) ([]byte, error) {
+	req, err := http.NewRequest("GET", conn.URL+resource, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
 	// Set the username and password for HTTP Basic Authentication
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(conn.Username, conn.Password)
 
-	resp, err := client.Do(req)
+	resp, err := conn.Conn.Do(req)
+
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request: %v", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -56,15 +50,18 @@ func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	cpool, _ := bfrest.NewConnectionPool("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
+	cpool, _ := bfrest.NewPool("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123", 5)
 
-	fmt.Printf("Pool has %d connections.\n", cpool.GetAvailableConnections())
+	fmt.Printf("Connection pool has %d items\n", cpool.Len())
 
-	url := "https://10.10.220.60:52311/api/computers" // Replace with your actual URL
-	username := "IEMAdmin"                            // Replace with your actual username
-	password := "BigFix!123"                          // Replace with your actual password
+	conn, _ := cpool.Acquire()
 
-	data, err := getDataFromAPI(url, username, password)
+	fmt.Printf("Connection pool has %d items\n", cpool.Len())
+
+	url := "/api/computers" // Replace with your actual URL
+
+	data, err := getDataFromAPI(conn, url)
+
 	if err != nil {
 		fmt.Printf("An error occurred: %v\n", err)
 		return
@@ -72,6 +69,8 @@ func main() {
 
 	// Data contains the raw XML payload.
 	fmt.Printf("Raw XML Data: %s\n", string(data))
+
+	cpool.Release(conn)
 
 	// Unmarshal the XML data into Go structures
 	var computers bfrest.BESAPI
@@ -81,8 +80,7 @@ func main() {
 		return
 	}
 
-	// Print the first computer name
-	if len(computers.Computer) > 0 {
-		fmt.Printf("First computer name: %d\n", computers.Computer[0].ID)
+	for _, computer := range computers.Computer {
+		fmt.Printf("Computer: %d\n", computer.ID)
 	}
 }
