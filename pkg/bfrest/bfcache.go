@@ -1,13 +1,17 @@
 package bfrest
 
 import (
+	"encoding/json"
+	"encoding/xml"
+	"net/url"
 	"strings"
 	"time"
 )
 
 type CacheItem struct {
-	timestamp int64
-	rawXML    string
+	Timestamp int64
+	RawXML    string
+	Json      string
 }
 
 type BigFixServerCache struct {
@@ -34,8 +38,28 @@ func GetCacheInstance() *BigFixCache {
 	return cacheInstance
 }
 
+func getBaseUrl(fullURL string) string {
+	parsedURL, err := url.Parse(fullURL)
+	if err != nil {
+		return ""
+	}
+
+	scheme := parsedURL.Scheme
+	host := parsedURL.Host
+	port := ""
+
+	if strings.Contains(host, ":") {
+		hostPort := strings.Split(host, ":")
+		host = hostPort[0]
+		port = hostPort[1]
+	}
+
+	return scheme + "://" + host + ":" + port
+}
+
 func Get(url, username, passwd string) (*CacheItem, error) {
-	baseURL := parseBaseURL(url)
+	baseURL := getBaseUrl(url)
+
 	cache := GetCacheInstance()
 
 	if cache.serverCache[baseURL] == nil {
@@ -52,7 +76,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 	var serverCache = cache.serverCache[baseURL]
 
 	// If the result doesn't exist or is too old, pull it from the server
-	if serverCache.cacheMap[url] == nil {
+	if serverCache.cacheMap[url] == nil || (time.Now().Unix()-serverCache.cacheMap[url].Timestamp) > int64(serverCache.maxAge) {
 		conn, err := serverCache.cpool.Acquire()
 
 		if err != nil {
@@ -67,23 +91,40 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 			return nil, err
 		}
 
+		var besapi BESAPI
+		var bes BES
+		var jsonValue []byte
+
+		if strings.Contains(rawXML, "BESAPI") {
+			err = xml.Unmarshal(([]byte)(rawXML), &besapi)
+			if err != nil {
+				return nil, err
+			}
+
+			jsonValue, err = json.Marshal(&besapi)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = xml.Unmarshal(([]byte)(rawXML), &bes)
+			if err != nil {
+				return nil, err
+			}jsonValue
+
+			jsonValue, err = json.Marshal(&bes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		jStr := (string)(jsonValue)
+
 		serverCache.cacheMap[url] = &CacheItem{
-			timestamp: time.Now().Unix(),
-			rawXML:    rawXML,
+			Timestamp: time.Now().Unix(),
+			RawXML:    rawXML,
+			Json:      jStr,
 		}
 	}
 
 	return serverCache.cacheMap[url], nil
-}
-
-func parseBaseURL(url string) string {
-	// Find the index of the first occurrence of ":"
-	colonIndex := strings.Index(url, ":")
-	// Find the index of the first occurrence of "/"
-	slashIndex := strings.Index(url, "/")
-
-	// Extract the substring from the start to the port
-	baseURL := url[colonIndex+3 : slashIndex]
-
-	return baseURL
 }
