@@ -29,6 +29,14 @@ func main() {
 		return
 	}
 
+	bfrest.PopulateCoreTypes("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
+
+	for true {
+		fmt.Println("Enter a query:")
+		var query string
+		fmt.Scanln(&query)
+	}
+
 	fmt.Println(api)
 
 }

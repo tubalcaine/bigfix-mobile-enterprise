@@ -57,13 +57,17 @@ func getBaseUrl(fullURL string) string {
 	return scheme + "://" + host + ":" + port
 }
 
+func silentGet(url, username, passwd string) {
+	go Get(url, username, passwd)
+}
+
 func Get(url, username, passwd string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
 
 	cache := GetCacheInstance()
 
 	if cache.serverCache[baseURL] == nil {
-		newpool, _ := NewPool(baseURL, username, passwd, 5)
+		newpool, _ := NewPool(baseURL, username, passwd, 8)
 
 		cache.serverCache[baseURL] = &BigFixServerCache{
 			serverName: baseURL,
@@ -127,4 +131,51 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 	}
 
 	return serverCache.cacheMap[url], nil
+}
+
+func PopulateCoreTypes(serverUrl string, username string, password string) error {
+	var besapi BESAPI
+	result, err := Get(serverUrl+"/api/actions", username, password)
+	if err != nil {
+		return err
+	}
+
+	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	if err != nil {
+		return err
+	}
+
+	for _, action := range besapi.Action {
+		go silentGet(action.Resource, username, password)
+	}
+
+	result, err = Get(serverUrl+"/api/computers", username, password)
+	if err != nil {
+		return err
+	}
+
+	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	if err != nil {
+		return err
+	}
+
+	for _, computer := range besapi.Computer {
+		go silentGet(computer.Resource, username, password)
+	}
+
+	result, err = Get(serverUrl+"/api/sites", username, password)
+
+	if err != nil {
+		return err
+	}
+
+	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	if err != nil {
+		return err
+	}
+
+	for _, site := range besapi.CustomSite {
+		go silentGet(site.Resource, username, password)
+	}
+	return err
 }
