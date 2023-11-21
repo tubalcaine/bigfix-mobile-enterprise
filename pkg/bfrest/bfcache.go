@@ -3,7 +3,9 @@ package bfrest
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -58,7 +60,14 @@ func getBaseUrl(fullURL string) string {
 }
 
 func silentGet(url, username, passwd string) {
-	go Get(url, username, passwd)
+	res, err := Get(url, username, passwd)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
+		fmt.Fprintln(os.Stderr, res)
+		fmt.Fprintf(os.Stderr, "Silent GET failed: %s\n", err)
+		os.Exit(1)
+	}
 }
 
 func Get(url, username, passwd string) (*CacheItem, error) {
