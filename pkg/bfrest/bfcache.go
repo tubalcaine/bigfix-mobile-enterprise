@@ -109,7 +109,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 			err = xml.Unmarshal(([]byte)(rawXML), &bes)
 			if err != nil {
 				return nil, err
-			}jsonValue
+			}
 
 			jsonValue, err = json.Marshal(&bes)
 			if err != nil {
