@@ -158,7 +158,8 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 	}
 
 	for _, action := range besapi.Action {
-		go silentGet(action.Resource, username, password)
+		silentGet(action.Resource, username, password)
+		//		go silentGet(action.Resource, username, password)
 	}
 
 	result, err = Get(serverUrl+"/api/computers", username, password)
@@ -172,7 +173,8 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 	}
 
 	for _, computer := range besapi.Computer {
-		go silentGet(computer.Resource, username, password)
+		silentGet(computer.Resource, username, password)
+		//		go silentGet(computer.Resource, username, password)
 	}
 
 	result, err = Get(serverUrl+"/api/sites", username, password)
@@ -187,7 +189,8 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 	}
 
 	for _, site := range besapi.CustomSite {
-		go silentGet(site.Resource, username, password)
+		silentGet(site.Resource, username, password)
+		//		go silentGet(site.Resource, username, password)
 	}
 	return err
 }
