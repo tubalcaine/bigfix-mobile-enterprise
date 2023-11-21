@@ -60,6 +60,7 @@ func getBaseUrl(fullURL string) string {
 }
 
 func silentGet(url, username, passwd string) {
+	fmt.Fprintf(os.Stderr, "Silent GET URL: %s\n", url)
 	res, err := Get(url, username, passwd)
 
 	if err != nil {
@@ -72,6 +73,8 @@ func silentGet(url, username, passwd string) {
 
 func Get(url, username, passwd string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
+
+	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
 
 	cache := GetCacheInstance()
 
