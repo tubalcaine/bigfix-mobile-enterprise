@@ -11,38 +11,41 @@ import (
 	"time"
 )
 
+
+type BigFixCache struct {
+	sc     sync.Map
+	maxAge uint64
+}
+
+type BigFixServerCache struct {
+	serverName string
+	cpool      *Pool
+	cacheMap   sync.Map
+	maxAge     uint64
+}
+
 type CacheItem struct {
 	Timestamp int64
 	RawXML    string
 	Json      string
 }
 
-type BigFixServerCache struct {
-	serverName string
-	cpool      *Pool
-	cacheMap   map[string]*CacheItem
-	maxAge     uint64
-}
-
-type BigFixCache struct {
-	serverCache map[string]*BigFixServerCache
-	maxAge      uint64
-}
-
 var cacheInstance *BigFixCache
-var cacheMutex sync.Mutex
 
+// Singleton cache constructor
 func GetCacheInstance() *BigFixCache {
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
-			serverCache: make(map[string]*BigFixServerCache),
-			maxAge:      300,
+			sc:     sync.Map{},
+			maxAge: 300,
 		}
 	}
+
 	return cacheInstance
 }
 
-func getBaseUrl(fullURL string) string {
+func getBaseUrl(fullURL string) str	return nil, fmt.Errorf("type failure loading cache item for %s", url)
+ing {
 	parsedURL, err := url.Parse(fullURL)
 	if err != nil {
 		return ""
@@ -80,79 +83,109 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 
 	cache := GetCacheInstance()
 
-	cacheMutex.Lock()
-	if cache.serverCache[baseURL] == nil {
+	// cacheMutex.Lock()
+	scValue, err := cache.sc.Load(baseURL)
+	if err {
 		newpool, _ := NewPool(baseURL, username, passwd, 8)
 
-		cache.serverCache[baseURL] = &BigFixServerCache{
+		scInstance := &BigFixServerCache{
 			serverName: baseURL,
 			cpool:      newpool,
-			cacheMap:   make(map[string]*CacheItem),
 			maxAge:     cache.maxAge,
+			cacheMap:   sync.Map{},
 		}
+
+		cache.sc.Store(baseURL, scInstance)
+		scValue, _ = cache.sc.Load(baseURL)
 	}
-	serverCache := cache.serverCache[baseURL]
-	cacheMutex.Unlock()
+
+	sc, _ := scValue.(*BigFixServerCache)
+	//cacheMutex.Unlock()
 
 	// If the result doesn't exist or is too old, pull it from the server
-	cacheMutex.Lock()
-	if serverCache.cacheMap[url] == nil || (time.Now().Unix()-serverCache.cacheMap[url].Timestamp) > int64(serverCache.maxAge) {
-		cacheMutex.Unlock()
+	//sc.mu.Lock()
+	value, err := sc.cacheMap.Load(url)
 
-		conn, err := serverCache.cpool.Acquire()
+	var cm *CacheItem
 
+	// Cache miss
+	if err {
+		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
 		}
-
-		defer serverCache.cpool.Release(conn)
-
-		rawXML, err := conn.Get(url)
-
-		if err != nil {
-			return nil, err
-		}
-
-		var besapi BESAPI
-		var bes BES
-		var jsonValue []byte
-
-		if strings.Contains(rawXML, "BESAPI") {
-			err = xml.Unmarshal(([]byte)(rawXML), &besapi)
-			if err != nil {
-				return nil, err
-			}
-
-			jsonValue, err = json.Marshal(&besapi)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			err = xml.Unmarshal(([]byte)(rawXML), &bes)
-			if err != nil {
-				return nil, err
-			}
-
-			jsonValue, err = json.Marshal(&bes)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		jStr := (string)(jsonValue)
-
-		cacheMutex.Lock()
-		serverCache.cacheMap[url] = &CacheItem{
-			Timestamp: time.Now().Unix(),
-			RawXML:    rawXML,
-			Json:      jStr,
-		}
-		cacheMutex.Unlock()
-	} else {
-		cacheMutex.Unlock()
+		sc.cacheMap.Store(url, cm)
+		return cm, nil
 	}
 
-	return serverCache.cacheMap[url], nil
+	cm, err = value.(*CacheItem)
+
+	if err {
+		return nil, fmt.Errorf("type failure loading cache item for %s", url)
+	}
+
+	// Cache expired
+	if time.Now().Unix()-cm.Timestamp > int64(sc.maxAge) {
+		cm, err := retrieveBigFixData(url, sc)
+		if err != nil {
+			return nil, err
+		}
+		sc.cacheMap.Store(url, cm)
+		return cm, nil
+	}
+
+	// Cache hit
+	return cm, nil
+}
+
+func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
+	conn, err := sc.cpool.Acquire()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer sc.cpool.Release(conn)
+
+	rawXML, err := conn.Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var besapi BESAPI
+	var bes BES
+	var jsonValue []byte
+
+	if strings.Contains(rawXML, "BESAPI") {
+		err = xml.Unmarshal(([]byte)(rawXML), &besapi)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonValue, err = json.Marshal(&besapi)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = xml.Unmarshal(([]byte)(rawXML), &bes)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonValue, err = json.Marshal(&bes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	jStr := (string)(jsonValue)
+
+	return &CacheItem{
+		Timestamp: time.Now().Unix(),
+		RawXML:    rawXML,
+		Json:      jStr,
+	}, nil
 }
 
 func PopulateCoreTypes(serverUrl string, username string, password string) error {
