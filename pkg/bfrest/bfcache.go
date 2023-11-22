@@ -30,9 +30,12 @@ type CacheItem struct {
 }
 
 var cacheInstance *BigFixCache
+var cacheMu = &sync.Mutex{}
 
 // Singleton cache constructor
 func GetCache() *BigFixCache {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
 			sc:     sync.Map{},
@@ -82,6 +85,8 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 	cache := GetCache()
 
 	scValue, err := cache.sc.Load(baseURL)
+
+	// If the BigFixServerCache is not found...
 	if !err {
 		newpool, _ := NewPool(baseURL, username, passwd, 8)
 
@@ -93,10 +98,15 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 		}
 
 		cache.sc.Store(baseURL, scInstance)
+		// Reload scValue with the newly created cache
 		scValue, _ = cache.sc.Load(baseURL)
 	}
 
+	// Make the type assertion and handle failure
 	sc, _ := scValue.(*BigFixServerCache)
+
+	// We now have the server's cache. Check to see if we have the
+	// requested URL and if it is not expired
 
 	// If the result doesn't exist or is too old, pull it from the server
 	value, err := sc.cacheMap.Load(url)
