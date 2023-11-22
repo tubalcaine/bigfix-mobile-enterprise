@@ -97,7 +97,7 @@ func NewPool(urlStr, username, password string, size int) (*Pool, error) {
 		closed:      false,
 		mutex:       sync.Mutex{},
 	}
-
+	bfconnection
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 

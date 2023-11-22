@@ -111,7 +111,8 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 
 	var cm *CacheItem
 
-	// Cache miss
+	// Cache miss		cache := bfrest.GetCache()
+
 	if !err {
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
@@ -123,7 +124,7 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 
 	cm, err = value.(*CacheItem)
 
-	if err {
+	if !err {
 		return nil, fmt.Errorf("type failure loading cache item for %s", url)
 	}
 

@@ -20,6 +20,8 @@ func main() {
 
 	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass)
 
+	cache := bfrest.GetCache()
+
 	// At this point we will start a web service, but for now, just loop
 	// and wait for input so the program doesn't exit.
 	for {
@@ -29,7 +31,6 @@ func main() {
 		if query == "exit" {
 			break
 		}
-		cache := bfrest.GetCache()
 
 		fmt.Println(cache.Get(query, app_user, app_pass))
 	}
