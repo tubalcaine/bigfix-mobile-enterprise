@@ -65,9 +65,9 @@ func getBaseUrl(fullURL string) string {
 	return scheme + "://" + host + ":" + port
 }
 
-func silentGet(url, username, passwd string) {
+func (cache *BigFixCache) silentGet(url, username, passwd string) {
 	fmt.Fprintf(os.Stderr, "Silent GET URL: %s\n", url)
-	res, err := Get(url, username, passwd)
+	res, err := cache.Get(url, username, passwd)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
@@ -77,12 +77,10 @@ func silentGet(url, username, passwd string) {
 	}
 }
 
-func Get(url, username, passwd string) (*CacheItem, error) {
+func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
 
 	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
-
-	cache := GetCache()
 
 	scValue, err := cache.sc.Load(baseURL)
 
@@ -200,7 +198,10 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 
 func PopulateCoreTypes(serverUrl string, username string, password string) error {
 	var besapi BESAPI
-	result, err := Get(serverUrl+"/api/actions", username, password)
+
+	cache := GetCache()
+
+	result, err := cache.Get(serverUrl+"/api/actions", username, password)
 	if err != nil {
 		return err
 	}
@@ -212,10 +213,10 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 
 	for _, action := range besapi.Action {
 		//		silentGet(action.Resource, username, password)
-		go silentGet(action.Resource, username, password)
+		go cache.silentGet(action.Resource, username, password)
 	}
 
-	result, err = Get(serverUrl+"/api/computers", username, password)
+	result, err = cache.Get(serverUrl+"/api/computers", username, password)
 	if err != nil {
 		return err
 	}
@@ -227,10 +228,10 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 
 	for _, computer := range besapi.Computer {
 		//		silentGet(computer.Resource, username, password)
-		go silentGet(computer.Resource, username, password)
+		go cache.silentGet(computer.Resource, username, password)
 	}
 
-	result, err = Get(serverUrl+"/api/sites", username, password)
+	result, err = cache.Get(serverUrl+"/api/sites", username, password)
 
 	if err != nil {
 		return err
@@ -243,8 +244,8 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 
 	for _, site := range besapi.CustomSite {
 		//		silentGet(site.Resource, username, password)
-		go silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource, username, password)
 	}
 
-	return err
+	return nil
 }

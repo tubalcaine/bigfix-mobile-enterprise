@@ -10,24 +10,28 @@ const (
 	app_version = "0.0"
 	app_name    = "bem"
 	app_desc    = "BigFix Enterprise Mobile Server"
+	app_user    = "IEMAdmin"
+	app_pass    = "BigFix!123"
 )
 
 func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
+	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass)
 
 	// At this point we will start a web service, but for now, just loop
 	// and wait for input so the program doesn't exit.
 	for {
-		fmt.Println("Enter a query:")
+		fmt.Println("\n\nEnter a url (exit to terminate): ")
 		var query string
 		fmt.Scanln(&query)
 		if query == "exit" {
 			break
 		}
+		cache := bfrest.GetCache()
+
+		fmt.Println(cache.Get(query, app_user, app_pass))
 	}
 
-	fmt.Println(bfrest.GetCache())
 }

@@ -132,15 +132,13 @@ func (p *Pool) Acquire() (*BFConnection, error) {
 	select {
 	case conn := <-p.connections:
 		return conn, nil
-	case <-time.After(5 * time.Minute):
+	case <-time.After(30 * time.Second):
 		return nil, fmt.Errorf("timeout on connection Acquire")
 	}
 }
 
 // Release returns a connection to the pool.
 func (p *Pool) Release(c *BFConnection) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 	fmt.Println("Release")
 	if p.closed {
 		// handle closed pool scenario, maybe discard the connection
