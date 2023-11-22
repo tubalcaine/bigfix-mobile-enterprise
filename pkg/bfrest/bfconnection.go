@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+// Pool manages a set of connections.
+type Pool struct {
+	connections chan *BFConnection
+	factory     func() (*BFConnection, error)
+	closed      bool
+	mutex       sync.Mutex
+}
+
 // BFConnection represents a connection configuration.
 type BFConnection struct {
 	URL      string
@@ -73,14 +81,6 @@ func createBFConnection(urlStr string, username string, password string) (*BFCon
 	}, nil
 }
 
-// Pool manages a set of connections.
-type Pool struct {
-	connections chan *BFConnection
-	factory     func() (*BFConnection, error)
-	closed      bool
-	mutex       sync.Mutex
-}
-
 // NewPool creates a new pool of connections.
 func NewPool(urlStr, username, password string, size int) (*Pool, error) {
 	if size <= 0 {
@@ -98,6 +98,9 @@ func NewPool(urlStr, username, password string, size int) (*Pool, error) {
 		mutex:       sync.Mutex{},
 	}
 
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
 	for i := 0; i < size; i++ {
 		connection, err := factory()
 		if err != nil {
@@ -111,6 +114,8 @@ func NewPool(urlStr, username, password string, size int) (*Pool, error) {
 
 // Return number of connections in the pool.
 func (p *Pool) Len() int {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	return len(p.connections)
 }
 

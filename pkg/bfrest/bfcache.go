@@ -102,7 +102,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 		scValue, _ = cache.sc.Load(baseURL)
 	}
 
-	// Make the type assertion and handle failure
+	// Make the type assertion and handle failureserenity:1
 	sc, _ := scValue.(*BigFixServerCache)
 
 	// We now have the server's cache. Check to see if we have the
@@ -151,11 +151,10 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 		return nil, err
 	}
 
-	defer sc.cpool.Release(conn)
-
 	rawXML, err := conn.Get(url)
 
 	if err != nil {
+		sc.cpool.Release(conn)
 		return nil, err
 	}
 
@@ -166,27 +165,32 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	if strings.Contains(rawXML, "BESAPI") {
 		err = xml.Unmarshal(([]byte)(rawXML), &besapi)
 		if err != nil {
+			sc.cpool.Release(conn)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&besapi)
 		if err != nil {
+			sc.cpool.Release(conn)
 			return nil, err
 		}
 	} else {
 		err = xml.Unmarshal(([]byte)(rawXML), &bes)
 		if err != nil {
+			sc.cpool.Release(conn)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&bes)
 		if err != nil {
+			sc.cpool.Release(conn)
 			return nil, err
 		}
 	}
 
 	jStr := string(jsonValue)
 
+	sc.cpool.Release(conn)
 	return &CacheItem{
 		Timestamp: time.Now().Unix(),
 		RawXML:    rawXML,
