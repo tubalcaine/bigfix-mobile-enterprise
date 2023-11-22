@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-
 type BigFixCache struct {
 	sc     sync.Map
 	maxAge uint64
@@ -44,8 +43,7 @@ func GetCacheInstance() *BigFixCache {
 	return cacheInstance
 }
 
-func getBaseUrl(fullURL string) str	return nil, fmt.Errorf("type failure loading cache item for %s", url)
-ing {
+func getBaseUrl(fullURL string) string {
 	parsedURL, err := url.Parse(fullURL)
 	if err != nil {
 		return ""
