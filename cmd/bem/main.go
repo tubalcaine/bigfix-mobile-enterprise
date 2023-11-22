@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
 
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
@@ -17,26 +16,18 @@ func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	result, err := bfrest.Get("https://10.10.220.60:52311/api/computers", "IEMAdmin", "BigFix!123")
+	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
 
-	fmt.Println(result)
-	fmt.Println(err)
-
-	var api bfrest.BESAPI
-	err = xml.Unmarshal(([]byte)(result.RawXML), &api)
-	if err != nil {
-		fmt.Println("Error parsing XML:", err)
-		return
-	}
-
-	bfrest.PopulateCoreTypes("https://10.10.220.60:52311", "IEMAdmin", "BigFix!123")
-
-	for true {
+	// At this point we will start a web service, but for now, just loop
+	// and wait for input so the program doesn't exit.
+	for {
 		fmt.Println("Enter a query:")
 		var query string
 		fmt.Scanln(&query)
+		if query == "exit" {
+			break
+		}
 	}
 
-	fmt.Println(api)
-
+	fmt.Println(bfrest.GetCache())
 }
