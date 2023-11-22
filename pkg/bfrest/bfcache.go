@@ -17,10 +17,10 @@ type BigFixCache struct {
 }
 
 type BigFixServerCache struct {
-	serverName string
+	ServerName string
 	cpool      *Pool
-	cacheMap   sync.Map
-	maxAge     uint64
+	CacheMap   sync.Map
+	MaxAge     uint64
 }
 
 type CacheItem struct {
@@ -89,10 +89,10 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 		newpool, _ := NewPool(baseURL, username, passwd, 8)
 
 		scInstance := &BigFixServerCache{
-			serverName: baseURL,
+			ServerName: baseURL,
 			cpool:      newpool,
-			maxAge:     cache.maxAge,
-			cacheMap:   sync.Map{},
+			MaxAge:     cache.maxAge,
+			CacheMap:   sync.Map{},
 		}
 
 		cache.sc.Store(baseURL, scInstance)
@@ -107,7 +107,7 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 	// requested URL and if it is not expired
 
 	// If the result doesn't exist or is too old, pull it from the server
-	value, err := sc.cacheMap.Load(url)
+	value, err := sc.CacheMap.Load(url)
 
 	var cm *CacheItem
 
@@ -118,7 +118,7 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 		if err != nil {
 			return nil, err
 		}
-		sc.cacheMap.Store(url, cm)
+		sc.CacheMap.Store(url, cm)
 		return cm, nil
 	}
 
@@ -129,12 +129,12 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 	}
 
 	// Cache expired
-	if time.Now().Unix()-cm.Timestamp > int64(sc.maxAge) {
+	if time.Now().Unix()-cm.Timestamp > int64(sc.MaxAge) {
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
 		}
-		sc.cacheMap.Store(url, cm)
+		sc.CacheMap.Store(url, cm)
 		return cm, nil
 	}
 

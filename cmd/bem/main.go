@@ -32,6 +32,9 @@ func main() {
 			break
 		}
 
+		if query == "servers" {
+			
+
 		fmt.Println(cache.Get(query, app_user, app_pass))
 	}
 
