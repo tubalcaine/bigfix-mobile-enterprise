@@ -83,7 +83,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 
 	// cacheMutex.Lock()
 	scValue, err := cache.sc.Load(baseURL)
-	if err {
+	if !err {
 		newpool, _ := NewPool(baseURL, username, passwd, 8)
 
 		scInstance := &BigFixServerCache{
@@ -105,7 +105,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 	var cm *CacheItem
 
 	// Cache miss
-	if err {
+	if !err {
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
