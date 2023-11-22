@@ -137,6 +137,7 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	conn, err := sc.cpool.Acquire()
 
 	if err != nil {
+		fmt.Printf("For URL %s\nError acquiring connection: %s\n\n", url, err)
 		return nil, err
 	}
 
@@ -174,10 +175,7 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 		}
 	}
 
-	jStr, ok := jsonValue.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert JSON value to string")
-	}
+	jStr := string(jsonValue)
 
 	return &CacheItem{
 		Timestamp: time.Now().Unix(),

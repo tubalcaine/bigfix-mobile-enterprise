@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 )
 
 // BFConnection represents a connection configuration.
@@ -114,6 +115,7 @@ func (p *Pool) Len() int {
 }
 
 // Acquire retrieves a connection from the pool.
+
 func (p *Pool) Acquire() (*BFConnection, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -122,7 +124,12 @@ func (p *Pool) Acquire() (*BFConnection, error) {
 		return nil, fmt.Errorf("pool is closed")
 	}
 
-	return <-p.connections, nil
+	select {
+	case conn := <-p.connections:
+		return conn, nil
+	case <-time.After(5 * time.Minute):
+		return nil, fmt.Errorf("timeout on connection Acquire")
+	}
 }
 
 // Release returns a connection to the pool.
