@@ -32,7 +32,7 @@ type CacheItem struct {
 var cacheInstance *BigFixCache
 
 // Singleton cache constructor
-func GetCacheInstance() *BigFixCache {
+func GetCache() *BigFixCache {
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
 			sc:     sync.Map{},
@@ -79,7 +79,7 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 
 	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
 
-	cache := GetCacheInstance()
+	cache := GetCache()
 
 	// cacheMutex.Lock()
 	scValue, err := cache.sc.Load(baseURL)
@@ -98,10 +98,8 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 	}
 
 	sc, _ := scValue.(*BigFixServerCache)
-	//cacheMutex.Unlock()
 
 	// If the result doesn't exist or is too old, pull it from the server
-	//sc.mu.Lock()
 	value, err := sc.cacheMap.Load(url)
 
 	var cm *CacheItem
