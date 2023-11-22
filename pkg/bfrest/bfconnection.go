@@ -93,6 +93,8 @@ func NewPool(urlStr, username, password string, size int) (*Pool, error) {
 	pool := &Pool{
 		connections: make(chan *BFConnection, size),
 		factory:     factory,
+		closed:      false,
+		mutex:       sync.Mutex{},
 	}
 
 	for i := 0; i < size; i++ {

@@ -81,7 +81,6 @@ func Get(url, username, passwd string) (*CacheItem, error) {
 
 	cache := GetCache()
 
-	// cacheMutex.Lock()
 	scValue, err := cache.sc.Load(baseURL)
 	if !err {
 		newpool, _ := NewPool(baseURL, username, passwd, 8)
