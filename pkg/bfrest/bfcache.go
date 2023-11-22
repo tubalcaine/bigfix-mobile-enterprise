@@ -12,14 +12,14 @@ import (
 )
 
 type BigFixCache struct {
-	sc     sync.Map
-	maxAge uint64
+	ServerCache *sync.Map
+	maxAge      uint64
 }
 
 type BigFixServerCache struct {
 	ServerName string
 	cpool      *Pool
-	CacheMap   sync.Map
+	CacheMap   *sync.Map
 	MaxAge     uint64
 }
 
@@ -38,8 +38,8 @@ func GetCache() *BigFixCache {
 	defer cacheMu.Unlock()
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
-			sc:     sync.Map{},
-			maxAge: 300,
+			ServerCache: &sync.Map{},
+			maxAge:      300,
 		}
 	}
 
@@ -73,7 +73,7 @@ func (cache *BigFixCache) silentGet(url, username, passwd string) {
 		fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
 		fmt.Fprintln(os.Stderr, res)
 		fmt.Fprintf(os.Stderr, "Silent GET failed: %s\n", err)
-		os.Exit(1)
+		//		os.Exit(1)
 	}
 }
 
@@ -82,7 +82,7 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 
 	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
 
-	scValue, err := cache.sc.Load(baseURL)
+	scValue, err := cache.ServerCache.Load(baseURL)
 
 	// If the BigFixServerCache is not found...
 	if !err {
@@ -92,12 +92,12 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 			ServerName: baseURL,
 			cpool:      newpool,
 			MaxAge:     cache.maxAge,
-			CacheMap:   sync.Map{},
+			CacheMap:   &sync.Map{},
 		}
 
-		cache.sc.Store(baseURL, scInstance)
+		cache.ServerCache.Store(baseURL, scInstance)
 		// Reload scValue with the newly created cache
-		scValue, _ = cache.sc.Load(baseURL)
+		scValue, _ = cache.ServerCache.Load(baseURL)
 	}
 
 	// Make the type assertion and handle failureserenity:1
@@ -246,7 +246,23 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 	for _, site := range besapi.CustomSite {
 		//		silentGet(site.Resource, username, password)
 		go cache.silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource+"/content", username, password)
 	}
+
+	for _, site := range besapi.ExternalSite {
+		//		silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource+"/content", username, password)
+	}
+
+	for _, site := range besapi.OperatorSite {
+		//		silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource, username, password)
+		go cache.silentGet(site.Resource+"/content", username, password)
+	}
+
+	go cache.silentGet(besapi.ActionSite.Resource, username, password)
+	go cache.silentGet(besapi.ActionSite.Resource+"/content", username, password)
 
 	return nil
 }

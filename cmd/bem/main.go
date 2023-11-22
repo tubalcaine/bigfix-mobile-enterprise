@@ -32,10 +32,20 @@ func main() {
 			break
 		}
 
-		if query == "servers" {
-			
+		if query == "cache" {
+			cache.ServerCache.Range(func(key, value interface{}) bool {
+				server := value.(*bfrest.BigFixServerCache)
+				fmt.Println(server.ServerName)
+				server.CacheMap.Range(func(key, value interface{}) bool {
+					fmt.Printf("\t%s\n", key.(string))
+					return true
+				})
+
+				return true
+			})
+			continue
+		}
 
 		fmt.Println(cache.Get(query, app_user, app_pass))
 	}
-
 }
