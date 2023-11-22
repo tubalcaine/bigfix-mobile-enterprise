@@ -174,7 +174,10 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 		}
 	}
 
-	jStr := (string)(jsonValue)
+	jStr, ok := jsonValue.(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert JSON value to string")
+	}
 
 	return &CacheItem{
 		Timestamp: time.Now().Unix(),
