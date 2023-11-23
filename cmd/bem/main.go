@@ -19,6 +19,7 @@ func main() {
 	fmt.Println("Version " + app_version)
 
 	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass)
+	go bfrest.PopulateCoreTypes("https://10.10.220.59:52311", app_user, app_pass)
 
 	cache := bfrest.GetCache()
 

@@ -215,6 +215,7 @@ func PopulateCoreTypes(serverUrl string, username string, password string) error
 	for _, action := range besapi.Action {
 		//		silentGet(action.Resource, username, password)
 		go cache.silentGet(action.Resource, username, password)
+		go cache.silentGet(action.Resource+"/status", username, password)
 	}
 
 	result, err = cache.Get(serverUrl+"/api/computers", username, password)
