@@ -1,27 +1,60 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
 
-const (
-	app_version = "0.0"
-	app_name    = "bem"
+type Config struct {
+	AppUser         string         `json:"app_user"`
+	AppPass         string         `json:"app_pass"`
+	AppCacheTimeout uint64         `json:"app_cache_timeout"`
+	BigFixServers   []BigFixServer `json:"bigfix_servers"`
+}
+
+type BigFixServer struct {
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+var (
+	app_version = "0.1"
 	app_desc    = "BigFix Enterprise Mobile Server"
-	app_user    = "IEMAdmin"
-	app_pass    = "BigFix!123"
 )
 
 func main() {
+	configFile := flag.String("c", "./bem.json", "Path to the config file")
+	flag.Parse()
+
+	if *configFile == "" {
+		log.Fatal("Config file not provided")
+	}
+
+	configData, err := os.ReadFile(*configFile)
+	if err != nil {
+		log.Fatal("Failed to read config file:", err)
+	}
+
+	var config Config
+	err = json.Unmarshal(configData, &config)
+	if err != nil {
+		log.Fatal("Failed to parse config file:", err)
+	}
+
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	cache := bfrest.GetCache(300)
+	cache := bfrest.GetCache(config.AppCacheTimeout)
 
-	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass, 0)
-	go bfrest.PopulateCoreTypes("https://10.10.220.59:52311", app_user, app_pass, 0)
+	for _, server := range config.BigFixServers {
+		go bfrest.PopulateCoreTypes(server.URL, server.Username, server.Password, 0)
+	}
 
 	// At this point we will start a web service, but for now, just loop
 	// and wait for input so the program doesn't exit.
@@ -47,6 +80,6 @@ func main() {
 			continue
 		}
 
-		fmt.Println(cache.Get(query, app_user, app_pass))
+		fmt.Println(cache.Get(query, config.AppUser, config.AppPass))
 	}
 }
