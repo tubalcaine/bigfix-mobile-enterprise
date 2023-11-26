@@ -33,13 +33,17 @@ var cacheInstance *BigFixCache
 var cacheMu = &sync.Mutex{}
 
 // Singleton cache constructor
-func GetCache() *BigFixCache {
+func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	cacheMu.Lock()
+	if maxAgeSeconds == 0 {
+		maxAgeSeconds = 300
+	}
+
 	defer cacheMu.Unlock()
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
 			ServerCache: &sync.Map{},
-			maxAge:      300,
+			maxAge:      maxAgeSeconds,
 		}
 	}
 
@@ -197,10 +201,10 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	}, nil
 }
 
-func PopulateCoreTypes(serverUrl string, username string, password string) error {
+func PopulateCoreTypes(serverUrl string, username string, password string, maxAgeSeconds uint64) error {
 	var besapi BESAPI
 
-	cache := GetCache()
+	cache := GetCache(maxAgeSeconds)
 
 	result, err := cache.Get(serverUrl+"/api/actions", username, password)
 	if err != nil {

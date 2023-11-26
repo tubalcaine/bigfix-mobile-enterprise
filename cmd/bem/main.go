@@ -18,10 +18,10 @@ func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass)
-	go bfrest.PopulateCoreTypes("https://10.10.220.59:52311", app_user, app_pass)
+	cache := bfrest.GetCache(300)
 
-	cache := bfrest.GetCache()
+	go bfrest.PopulateCoreTypes("https://10.10.220.60:52311", app_user, app_pass, 0)
+	go bfrest.PopulateCoreTypes("https://10.10.220.59:52311", app_user, app_pass, 0)
 
 	// At this point we will start a web service, but for now, just loop
 	// and wait for input so the program doesn't exit.
