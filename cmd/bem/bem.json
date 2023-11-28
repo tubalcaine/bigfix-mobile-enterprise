@@ -1,0 +1,19 @@
+{
+  "app_cache_timeout": 0,
+  "bigfix_servers": [
+    {
+        "url": "https://10.10.220.60:52311",
+        "username": "bf2lab\\mas",
+        "password": "s2s!BigFix",
+        "maxage": 300,
+        "poolsize": 8
+      },
+      {
+        "url": "https://10.10.220.60:52311",
+        "username": "bf2lab\\mas",
+        "password": "s2s!BigFix",
+        "maxage": 300,
+        "poolsize": 8
+      }
+    ]
+}

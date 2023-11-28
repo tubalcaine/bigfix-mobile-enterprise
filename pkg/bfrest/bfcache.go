@@ -18,6 +18,8 @@ type BigFixCache struct {
 
 type BigFixServerCache struct {
 	ServerName string
+	ServerUser string
+	ServerPass string
 	cpool      *Pool
 	CacheMap   *sync.Map
 	MaxAge     uint64
@@ -50,6 +52,33 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	return cacheInstance
 }
 
+func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) (*BigFixCache, error) {
+	baseURL := getBaseUrl(url)
+
+	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
+
+	_, err := cache.ServerCache.Load(baseURL)
+
+	// If the BigFixServerCache is not found...
+	if !err {
+		newpool, _ := NewPool(baseURL, username, passwd, poolSize)
+
+		scInstance := &BigFixServerCache{
+			ServerName: baseURL,
+			cpool:      newpool,
+			MaxAge:     cache.maxAge,
+			CacheMap:   &sync.Map{},
+		}
+
+		cache.ServerCache.Store(baseURL, scInstance)
+		// Reload scValue with the newly created cache
+		_, _ = cache.ServerCache.Load(baseURL)
+		return cache, nil
+	}
+
+	return nil, fmt.Errorf("server cache %s already exists", baseURL)
+}
+
 func getBaseUrl(fullURL string) string {
 	parsedURL, err := url.Parse(fullURL)
 	if err != nil {
@@ -69,9 +98,9 @@ func getBaseUrl(fullURL string) string {
 	return scheme + "://" + host + ":" + port
 }
 
-func (cache *BigFixCache) silentGet(url, username, passwd string) {
+func (cache *BigFixCache) silentGet(url string) {
 	fmt.Fprintf(os.Stderr, "Silent GET URL: %s\n", url)
-	res, err := cache.Get(url, username, passwd)
+	res, err := cache.Get(url)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
@@ -81,27 +110,16 @@ func (cache *BigFixCache) silentGet(url, username, passwd string) {
 	}
 }
 
-func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) {
+func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
 
 	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
 
-	scValue, err := cache.ServerCache.Load(baseURL)
+	scValue, ok := cache.ServerCache.Load(baseURL)
 
 	// If the BigFixServerCache is not found...
-	if !err {
-		newpool, _ := NewPool(baseURL, username, passwd, 8)
-
-		scInstance := &BigFixServerCache{
-			ServerName: baseURL,
-			cpool:      newpool,
-			MaxAge:     cache.maxAge,
-			CacheMap:   &sync.Map{},
-		}
-
-		cache.ServerCache.Store(baseURL, scInstance)
-		// Reload scValue with the newly created cache
-		scValue, _ = cache.ServerCache.Load(baseURL)
+	if !ok {
+		return nil, fmt.Errorf("server cache does not exist for %s", baseURL)
 	}
 
 	// Make the type assertion and handle failureserenity:1
@@ -111,13 +129,13 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 	// requested URL and if it is not expired
 
 	// If the result doesn't exist or is too old, pull it from the server
-	value, err := sc.CacheMap.Load(url)
+	value, ok := sc.CacheMap.Load(url)
 
 	var cm *CacheItem
 
-	// Cache miss		cache := bfrest.GetCache()
+	if !ok {
+		// Cache miss
 
-	if !err {
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
@@ -126,14 +144,14 @@ func (cache *BigFixCache) Get(url, username, passwd string) (*CacheItem, error) 
 		return cm, nil
 	}
 
-	cm, err = value.(*CacheItem)
+	cm, ok = value.(*CacheItem)
 
-	if !err {
+	if !ok {
 		return nil, fmt.Errorf("type failure loading cache item for %s", url)
 	}
 
-	// Cache expired
 	if time.Now().Unix()-cm.Timestamp > int64(sc.MaxAge) {
+		// Cache expired
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
@@ -201,12 +219,10 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	}, nil
 }
 
-func PopulateCoreTypes(serverUrl string, username string, password string, maxAgeSeconds uint64) error {
+func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint64) error {
 	var besapi BESAPI
 
-	cache := GetCache(maxAgeSeconds)
-
-	result, err := cache.Get(serverUrl+"/api/actions", username, password)
+	result, err := cache.Get(serverUrl + "/api/actions")
 	if err != nil {
 		return err
 	}
@@ -218,11 +234,11 @@ func PopulateCoreTypes(serverUrl string, username string, password string, maxAg
 
 	for _, action := range besapi.Action {
 		//		silentGet(action.Resource, username, password)
-		go cache.silentGet(action.Resource, username, password)
-		go cache.silentGet(action.Resource+"/status", username, password)
+		go cache.silentGet(action.Resource)
+		go cache.silentGet(action.Resource + "/status")
 	}
 
-	result, err = cache.Get(serverUrl+"/api/computers", username, password)
+	result, err = cache.Get(serverUrl + "/api/computers")
 	if err != nil {
 		return err
 	}
@@ -234,10 +250,10 @@ func PopulateCoreTypes(serverUrl string, username string, password string, maxAg
 
 	for _, computer := range besapi.Computer {
 		//		silentGet(computer.Resource, username, password)
-		go cache.silentGet(computer.Resource, username, password)
+		go cache.silentGet(computer.Resource)
 	}
 
-	result, err = cache.Get(serverUrl+"/api/sites", username, password)
+	result, err = cache.Get(serverUrl + "/api/sites")
 
 	if err != nil {
 		return err
@@ -250,24 +266,24 @@ func PopulateCoreTypes(serverUrl string, username string, password string, maxAg
 
 	for _, site := range besapi.CustomSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource+"/content", username, password)
+		go cache.silentGet(site.Resource)
+		go cache.silentGet(site.Resource + "/content")
 	}
 
 	for _, site := range besapi.ExternalSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource+"/content", username, password)
+		go cache.silentGet(site.Resource)
+		go cache.silentGet(site.Resource + "/content")
 	}
 
 	for _, site := range besapi.OperatorSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource+"/content", username, password)
+		go cache.silentGet(site.Resource)
+		go cache.silentGet(site.Resource + "/content")
 	}
 
-	go cache.silentGet(besapi.ActionSite.Resource, username, password)
-	go cache.silentGet(besapi.ActionSite.Resource+"/content", username, password)
+	go cache.silentGet(besapi.ActionSite.Resource)
+	go cache.silentGet(besapi.ActionSite.Resource + "/content")
 
 	return nil
 }

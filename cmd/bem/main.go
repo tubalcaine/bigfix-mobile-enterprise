@@ -11,8 +11,6 @@ import (
 )
 
 type Config struct {
-	AppUser         string         `json:"app_user"`
-	AppPass         string         `json:"app_pass"`
 	AppCacheTimeout uint64         `json:"app_cache_timeout"`
 	BigFixServers   []BigFixServer `json:"bigfix_servers"`
 }
@@ -21,6 +19,8 @@ type BigFixServer struct {
 	URL      string `json:"url"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	MaxAge   uint64 `json:"maxage"`
+	PoolSize int    `json:"poolsize"`
 }
 
 var (
@@ -50,18 +50,38 @@ func main() {
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
-	cache := bfrest.GetCache(config.AppCacheTimeout)
+	cache := bfrest.
+		GetCache(config.AppCacheTimeout)
+
+	// _, err = cache.AddServer("https://10.10.220.59:52311", "IEMAdmin", "BigFix!123", 8)
+
+	// if err != nil {
+	// 	fmt.Printf("could not add server")
+	// 	os.exit(1)
+	// }
+
+	// _, err = cache.AddServer("https://10.10.220.60:52311", "bf2lab\\mas", "s2s!BigFix", 8)
+
+	// if err != nil {
+	// 	fmt.Printf("could not add server")
+	// 	os.exit(1)
+	// }
+
+	// cache.PopulateCoreTypes("https://10.10.220.59:52311", 300)
+	// cache.PopulateCoreTypes("https://10.10.220.60:52311", 300)
 
 	for _, server := range config.BigFixServers {
-		go bfrest.PopulateCoreTypes(server.URL, server.Username, server.Password, 0)
+		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize)
+		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
 	}
 
 	// At this point we will start a web service, but for now, just loop
 	// and wait for input so the program doesn't exit.
 	for {
-		fmt.Println("\n\nEnter a url (exit to terminate): ")
+		fmt.Println("\n\nEnter a url or command (exit to terminate): ")
 		var query string
 		fmt.Scanln(&query)
+
 		if query == "exit" {
 			break
 		}
@@ -80,6 +100,6 @@ func main() {
 			continue
 		}
 
-		fmt.Println(cache.Get(query, config.AppUser, config.AppPass))
+		fmt.Println(cache.Get(query))
 	}
 }
