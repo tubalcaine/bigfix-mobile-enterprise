@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
@@ -53,23 +55,6 @@ func main() {
 	cache := bfrest.
 		GetCache(config.AppCacheTimeout)
 
-	// _, err = cache.AddServer("https://10.10.220.59:52311", "IEMAdmin", "BigFix!123", 8)
-
-	// if err != nil {
-	// 	fmt.Printf("could not add server")
-	// 	os.exit(1)
-	// }
-
-	// _, err = cache.AddServer("https://10.10.220.60:52311", "bf2lab\\mas", "s2s!BigFix", 8)
-
-	// if err != nil {
-	// 	fmt.Printf("could not add server")
-	// 	os.exit(1)
-	// }
-
-	// cache.PopulateCoreTypes("https://10.10.220.59:52311", 300)
-	// cache.PopulateCoreTypes("https://10.10.220.60:52311", 300)
-
 	for _, server := range config.BigFixServers {
 		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize)
 		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
@@ -97,6 +82,44 @@ func main() {
 
 				return true
 			})
+			continue
+		}
+
+		if query == "summary" {
+			cache.ServerCache.Range(func(key, value interface{}) bool {
+				server := value.(*bfrest.BigFixServerCache)
+				fmt.Printf("For server %s\n\tWe have:\n", server.ServerName)
+				count, current, expired := 0, 0, 0
+				server.CacheMap.Range(func(key, value interface{}) bool {
+					v := value.(*bfrest.CacheItem)
+					count++
+					if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
+						expired++
+					} else {
+						current++
+					}
+
+					return true
+				})
+
+				fmt.Printf("\t\t%d total items, %d expired, %d current\n\n", count, expired, current)
+
+				return true
+			})
+			continue
+		}
+
+		if query == "help" {
+			fmt.Println("Commands:")
+			fmt.Println("\tcache - display the current cache")
+			fmt.Println("\tsummary - display a summary of the cache")
+			fmt.Println("\thelp - display this help")
+			fmt.Println("\texit - terminate the program")
+			fmt.Println("\t<url> - retrieve the url from the cache")
+			continue
+		}
+
+		if !strings.HasPrefix(query, "http") {
 			continue
 		}
 
