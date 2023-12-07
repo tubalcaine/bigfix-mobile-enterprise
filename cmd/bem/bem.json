@@ -6,14 +6,14 @@
         "username": "bf2lab\\mas",
         "password": "s2s!BigFix",
         "maxage": 300,
-        "poolsize": 8
+        "poolsize": 4
       },
       {
-        "url": "https://10.10.220.60:52311",
-        "username": "bf2lab\\mas",
-        "password": "s2s!BigFix",
+        "url": "https://10.10.220.59:52311",
+        "username": "IEMAdmin",
+        "password": "BigFix!123",
         "maxage": 300,
-        "poolsize": 8
+        "poolsize": 6
       }
     ]
 }
