@@ -1,7 +1,10 @@
-import requests
-import sys
+"""
+Generate shell script to pull BigFix XML for go struct generation
+"""
 import time
+import sys
 import xml.etree.ElementTree as ET
+import requests
 
 
 ## This is not "producton" code. It is a utility to pull a ton
@@ -29,6 +32,10 @@ initial_urls = [
     "/api/roles",
     "/api/samlproviders",
     "/api/sites",
+    "/api/admin/fields",
+    "/api/admin/masthead/parameters",
+    "/api/admin/options",
+    "/api/webreports",
 ]
 
 def get_url(bfurl):
@@ -76,13 +83,13 @@ def process_url(root):
             with open(f"training_xml/besapi_site_{siteid}_content.xml", "w", encoding="utf-8") as f:
                 f.write(contresponse)
             process_url(controot)
-            
-    
-        with open("training_xml/get_training_xml.sh", "a") as f:
+
+
+        with open("training_xml/get_training_xml.sh", "a", encoding="utf-8") as f:
             f.write(f"curl --insecure -u '{bfuser}:{bfpass}' {objurl} -o 'bes_{besfilename}.xml'\n")
 
-        
-        
+
+
 
 def main():
     """
@@ -93,17 +100,17 @@ def main():
     start_time = time.time()
     for url in initial_urls:
         print(f"Processing {url}...")
-        objname = url.split("/")[-1]
+        objname = url.rsplit("/", maxsplit=1)[-1]
         response = get_url(bfurlbase + url)
         with open(f"training_xml/besapi_{objname}.xml", "w", encoding="utf-8") as f:
             f.write(response)
-        
+
         root = ET.fromstring(response)
         process_url(root)
-        
+
     print("Processing complete.")
     print(f"Total elapsed time: {time.time() - start_time:.2f} seconds")
-    with open("training_xml/get_training_xml.sh", "a") as f:
+    with open("training_xml/get_training_xml.sh", "a",encoding="utf-8") as f:
         f.write("echo 'Run completed'\n")
 
 
