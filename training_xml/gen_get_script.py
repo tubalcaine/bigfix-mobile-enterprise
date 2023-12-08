@@ -1,6 +1,5 @@
-"""
-Generate shell script to pull BigFix XML for go struct generation
-"""
+#! /usr/bin/python
+
 import time
 import sys
 import xml.etree.ElementTree as ET
@@ -69,7 +68,7 @@ def process_url(root):
             resurl = objurl + "/status"
             resresponse = get_url(resurl)
             resroot = ET.fromstring(resresponse)
-            with open(f"training_xml/besapi_action_{actid}_result.xml", "w", encoding="utf-8") as f:
+            with open(f"besapi_action_{actid}_result.xml", "w", encoding="utf-8") as f:
                 f.write(resresponse)
 
         elif objtag.endswith("Site"):
@@ -80,12 +79,12 @@ def process_url(root):
             conturl = objurl + "/content"
             contresponse = get_url(conturl)
             controot = ET.fromstring(contresponse)
-            with open(f"training_xml/besapi_site_{siteid}_content.xml", "w", encoding="utf-8") as f:
+            with open(f"besapi_site_{siteid}_content.xml", "w", encoding="utf-8") as f:
                 f.write(contresponse)
             process_url(controot)
 
 
-        with open("training_xml/get_training_xml.sh", "a", encoding="utf-8") as f:
+        with open("get_training_xml.sh", "a", encoding="utf-8") as f:
             f.write(f"curl --insecure -u '{bfuser}:{bfpass}' {objurl} -o 'bes_{besfilename}.xml'\n")
 
 
@@ -95,14 +94,14 @@ def main():
     """
     This function is the entry point of the script.
     """
-    with open("training_xml/get_training_xml.sh", "w") as f:
+    with open("get_training_xml.sh", "w", encoding="utf-8") as f:
         f.write("#! /bin/bash\n")
     start_time = time.time()
     for url in initial_urls:
         print(f"Processing {url}...")
         objname = url.rsplit("/", maxsplit=1)[-1]
         response = get_url(bfurlbase + url)
-        with open(f"training_xml/besapi_{objname}.xml", "w", encoding="utf-8") as f:
+        with open(f"besapi_{objname}.xml", "w", encoding="utf-8") as f:
             f.write(response)
 
         root = ET.fromstring(response)
@@ -110,7 +109,7 @@ def main():
 
     print("Processing complete.")
     print(f"Total elapsed time: {time.time() - start_time:.2f} seconds")
-    with open("training_xml/get_training_xml.sh", "a",encoding="utf-8") as f:
+    with open("get_training_xml.sh", "a",encoding="utf-8") as f:
         f.write("echo 'Run completed'\n")
 
 
