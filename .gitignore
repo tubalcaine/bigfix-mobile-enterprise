@@ -22,3 +22,4 @@ go.work
 training_xml/*.xml
 cmd/bem/bem
 .vscode/launch.json
+training_xml/get_training_xml.sh
