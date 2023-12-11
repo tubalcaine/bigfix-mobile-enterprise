@@ -81,6 +81,10 @@ type BESAPI struct {
 		Resource       string `xml:"Resource,attr"`
 		ID             int    `xml:"ID"`
 		LastReportTime string `xml:"LastReportTime"`
+		Property       []struct {
+			Name     string `xml:"Name,attr"`
+			CharData string `xml:",chardata"`
+		} `xml:"Property"`
 	} `xml:"Computer"`
 	ComputerGroup []struct {
 		LastModified string `xml:"LastModified,attr"`
@@ -133,13 +137,19 @@ type BESAPI struct {
 		UseSSL       bool   `xml:"UseSSL"`
 		UserFilter   string `xml:"UserFilter"`
 	} `xml:"LDAPDirectory"`
+	ManualComputerGroup *struct {
+		Resource         string `xml:"Resource,attr"`
+		ComputerID       []int  `xml:"ComputerID"`
+		EvaluateOnClient bool   `xml:"EvaluateOnClient"`
+		Name             string `xml:"Name"`
+	} `xml:"ManualComputerGroup"`
 	MastheadParameters *struct {
 		Resource                   string `xml:"Resource,attr"`
 		ArchiveAllowUTF8           bool   `xml:"ArchiveAllowUTF8"`
 		Controller                 string `xml:"Controller"`
 		Enhanced91Security         bool   `xml:"Enhanced91Security"`
 		GatherInterval             string `xml:"GatherInterval"`
-		InitialLockState           string `xml:"InitialLockState"`
+		InitialLoc.vscodekState           string `xml:"InitialLockState"`
 		PortNumber                 int    `xml:"PortNumber"`
 		RequireFIPSCompliantCrypto bool   `xml:"RequireFIPSCompliantCrypto"`
 		UseSHA256FileChecksOnly    bool   `xml:"UseSHA256FileChecksOnly"`
@@ -152,8 +162,15 @@ type BESAPI struct {
 		CanLock                       bool   `xml:"CanLock"`
 		CanSendMultipleRefresh        bool   `xml:"CanSendMultipleRefresh"`
 		CanSubmitQueries              bool   `xml:"CanSubmitQueries"`
-		CustomContent                 bool   `xml:"CustomContent"`
-		InterfaceLogins               struct {
+		ComputerAssignments           *struct {
+			ByGroup struct {
+				Name     string `xml:"Name,attr"`
+				Resource string `xml:"Resource,attr"`
+				Type     string `xml:"Type,attr"`
+			} `xml:"ByGroup"`
+		} `xml:"ComputerAssignments"`
+		CustomContent   bool `xml:"CustomContent"`
+		InterfaceLogins struct {
 			API          bool `xml:"API"`
 			Applications struct {
 				Name []string `xml:"Name"`
@@ -193,7 +210,7 @@ type BESAPI struct {
 		CanSubmitQueries              int    `xml:"CanSubmitQueries"`
 		ComputerAssignments           struct {
 			AllComputers *struct{} `xml:"AllComputers"`
-			ByGroup      struct {
+			ByGroup      *struct {
 				Name     string `xml:"Name,attr"`
 				Resource string `xml:"Resource,attr"`
 				Type     string `xml:"Type,attr"`
@@ -224,7 +241,7 @@ type BESAPI struct {
 		} `xml:"Operators"`
 		PostActionBehaviorPrivilege string `xml:"PostActionBehaviorPrivilege"`
 		ShowOtherActions            int    `xml:"ShowOtherActions"`
-		Sites                       struct {
+		Sites                       *struct {
 			CustomSite []struct {
 				Name       string `xml:"Name"`
 				Permission string `xml:"Permission"`
