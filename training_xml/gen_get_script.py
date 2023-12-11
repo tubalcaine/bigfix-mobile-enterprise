@@ -62,12 +62,27 @@ def process_url(root):
         # TODO: Do something with objtag and objurl
         print(f"Type {objtag} URL {objurl}")
 
-        besfilename = objurl.split("/api/")[1].replace("/", "_")
+        if objurl is not None:
+            besfilename = objurl.split("/api/")[1].replace("/", "_")
+        else:
+            besfilename = objtag
+
+        if objtag == "DashboardData":
+            dvurl = objurl
+            dvresponse = get_url(dvurl)
+            dvroot = ET.fromstring(dvresponse)
+            dvpathanme = f"besapi_DBV_{besfilename}_V.xml"
+            if len(dvpathanme) > 255:
+                print(f"Filename {dvpathanme} is too long")
+                continue
+
+            with open(dvpathanme, "w", encoding="utf-8") as f:
+                f.write(dvresponse)
+
         if objtag == "Action":
             actid = objurl.split("/")[-1]
             resurl = objurl + "/status"
             resresponse = get_url(resurl)
-            resroot = ET.fromstring(resresponse)
             with open(f"besapi_action_{actid}_result.xml", "w", encoding="utf-8") as f:
                 f.write(resresponse)
 
@@ -83,9 +98,11 @@ def process_url(root):
                 f.write(contresponse)
             process_url(controot)
 
+        lfn = "TBD"
 
         with open("get_training_xml.sh", "a", encoding="utf-8") as f:
-            f.write(f"curl --insecure -u '{bfuser}:{bfpass}' {objurl} -o 'bes_{besfilename}.xml'\n")
+            f.write(f"curl --insecure -u '{bfuser}:{bfpass}' '{objurl}' " +
+                    f"-o '{lfn}_{besfilename}.xml'\n")
 
 
 
@@ -109,7 +126,7 @@ def main():
 
     print("Processing complete.")
     print(f"Total elapsed time: {time.time() - start_time:.2f} seconds")
-    with open("get_training_xml.sh", "a",encoding="utf-8") as f:
+    with open("get_training_xml.sh", "a", encoding="utf-8") as f:
         f.write("echo 'Run completed'\n")
 
 
