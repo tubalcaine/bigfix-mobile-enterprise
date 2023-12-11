@@ -124,7 +124,7 @@ func (p *Pool) Len() int {
 func (p *Pool) Acquire() (*BFConnection, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	fmt.Println("Acquire")
+	//	fmt.Println("Acquire")
 	if p.closed {
 		return nil, fmt.Errorf("pool is closed")
 	}
@@ -139,7 +139,7 @@ func (p *Pool) Acquire() (*BFConnection, error) {
 
 // Release returns a connection to the pool.
 func (p *Pool) Release(c *BFConnection) {
-	fmt.Println("Release")
+	//	fmt.Println("Release")
 	if p.closed {
 		// handle closed pool scenario, maybe discard the connection
 		return
