@@ -468,7 +468,7 @@ type BES struct {
 				Behavior string `xml:"Behavior,attr"`
 				CharData string `xml:",chardata"`
 			} `xml:"RetryWait"`
-			St.vscodeartDateTimeLocalOffset *string `xml:"StartDateTimeLocalOffset"`
+			StartDateTimeLocalOffset *string `xml:"StartDateTimeLocalOffset"`
 			TemporalDistribution     *string `xml:"TemporalDistribution"`
 			TimeRange                *struct {
 				EndTime   string `xml:"EndTime"`

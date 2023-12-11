@@ -149,7 +149,7 @@ type BESAPI struct {
 		Controller                 string `xml:"Controller"`
 		Enhanced91Security         bool   `xml:"Enhanced91Security"`
 		GatherInterval             string `xml:"GatherInterval"`
-		InitialLoc.vscodekState           string `xml:"InitialLockState"`
+		InitialLockState           string `xml:"InitialLockState"`
 		PortNumber                 int    `xml:"PortNumber"`
 		RequireFIPSCompliantCrypto bool   `xml:"RequireFIPSCompliantCrypto"`
 		UseSHA256FileChecksOnly    bool   `xml:"UseSHA256FileChecksOnly"`
