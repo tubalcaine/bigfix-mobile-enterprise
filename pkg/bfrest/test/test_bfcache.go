@@ -11,24 +11,24 @@ func TestGetCache(t *testing.T) {
 	bfrest.ResetCache()
 	// Test with non-zero maxAgeSeconds
 	cache := bfrest.GetCache(500)
-	if cache.GetMaxAge() != 500 {
-		t.Errorf("Expected maxAge to be %v, got %v", 500, cache.GetMaxAge())
+	if cache.MaxAge != 500 {
+		t.Errorf("Expected maxAge to be %v, got %v", 500, cache.MaxAge)
 	}
 
 	bfrest.ResetCache()
 	// Test with zero maxAgeSeconds
 	cache = bfrest.GetCache(0)
-	if cache.GetMaxAge() != 300 {
-		t.Errorf("Expected maxAge to be %v, got %v", 300, cache.GetMaxAge())
+	if cache.MaxAge != 300 {
+		t.Errorf("Expected maxAge to be %v, got %v", 300, cache.MaxAge)
 	}
 
 	bfrest.ResetCache()
 }
 
 func TestAddServer(t *testing.T) {
-	cache := &BigFixCache{
+	cache := &bfrest.BigFixCache{
 		ServerCache: &sync.Map{},
-		maxAge:      300,
+		MaxAge:      300,
 	}
 
 	// Test adding a new server
@@ -43,7 +43,7 @@ func TestAddServer(t *testing.T) {
 		t.Errorf("Server not found in ServerCache")
 	}
 
-	serverCache, ok := value.(*BigFixServerCache)
+	serverCache, ok := value.(*bfrest.BigFixServerCache)
 	if !ok {
 		t.Errorf("Expected value to be of type *BigFixServerCache, got %T", value)
 	}

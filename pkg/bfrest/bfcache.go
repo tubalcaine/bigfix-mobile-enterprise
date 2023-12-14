@@ -13,15 +13,7 @@ import (
 
 type BigFixCache struct {
 	ServerCache *sync.Map
-	maxAge      uint64
-}
-
-func (cache *BigFixCache) GetMaxAge() uint64 {
-	return cache.maxAge
-}
-
-func (cache *BigFixCache) SetMaxAge(maxAge uint64) {
-	cache.maxAge = maxAge
+	MaxAge      uint64
 }
 
 type BigFixServerCache struct {
@@ -53,7 +45,7 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
 			ServerCache: &sync.Map{},
-			maxAge:      maxAgeSeconds,
+			MaxAge:      maxAgeSeconds,
 		}
 	}
 
@@ -81,7 +73,7 @@ func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) 
 		scInstance := &BigFixServerCache{
 			ServerName: baseURL,
 			cpool:      newpool,
-			MaxAge:     cache.maxAge,
+			MaxAge:     cache.MaxAge,
 			CacheMap:   &sync.Map{},
 		}
 
