@@ -16,6 +16,14 @@ type BigFixCache struct {
 	maxAge      uint64
 }
 
+func (cache *BigFixCache) GetMaxAge() uint64 {
+	return cache.maxAge
+}
+
+func (cache *BigFixCache) SetMaxAge(maxAge uint64) {
+	cache.maxAge = maxAge
+}
+
 type BigFixServerCache struct {
 	ServerName string
 	ServerUser string
@@ -53,7 +61,7 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 }
 
 // This should only be called for testing purposes
-func resetCache() {
+func ResetCache() {
 	cacheMu.Lock()
 	defer cacheMu.Unlock()
 	cacheInstance = nil
