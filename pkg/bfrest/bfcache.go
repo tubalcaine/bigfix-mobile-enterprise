@@ -146,6 +146,11 @@ func (cache *BigFixCache) silentGet(url string) {
 	}
 }
 
+// Get retrieves a cache item for the given URL from the BigFixCache.
+// If the cache item is found and not expired, it is returned as a *CacheItem.
+// If the cache item is not found or expired, it is retrieved from the server
+// using the retrieveBigFixData function and stored in the cache before being returned.
+// If the server cache does not exist for the given URL, an error is returned.
 func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
 
@@ -200,6 +205,10 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	return cm, nil
 }
 
+// retrieveBigFixData retrieves BigFix data from the specified URL and returns a CacheItem containing the raw XML and JSON representation of the data.
+// It acquires a connection from the BigFixServerCache connection pool, makes a GET request to the URL, and unmarshals the XML response into either a BESAPI or BES struct.
+// The JSON representation of the struct is then marshaled and returned as part of the CacheItem.
+// If any errors occur during the process, the acquired connection is released and the error is returned.
 func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	conn, err := sc.cpool.Acquire()
 
@@ -255,6 +264,12 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 	}, nil
 }
 
+// PopulateCoreTypes populates the BigFixCache with core types by making API calls to the specified serverUrl.
+// It retrieves actions, computers, sites, and their corresponding resources and content.
+// The maxAgeSeconds parameter specifies the maximum age in seconds for the cached data.
+// This method runs asynchronously, making concurrent API calls to improve performance.
+// It returns an error if any API call fails.
+// This method really isn't necessary, but it is useful for populating the cache with commonly accessed data.
 func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint64) error {
 	var besapi BESAPI
 
