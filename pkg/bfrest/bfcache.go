@@ -52,6 +52,13 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	return cacheInstance
 }
 
+// This should only be called for testing purposes
+func resetCache() {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	cacheInstance = nil
+}
+
 func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) (*BigFixCache, error) {
 	baseURL := getBaseUrl(url)
 
