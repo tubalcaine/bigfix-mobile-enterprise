@@ -52,7 +52,8 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	return cacheInstance
 }
 
-// This should only be called for testing purposes
+// This should only be called for testing purposes. There is
+// no reason to reset the cache in production.
 func ResetCache() {
 	cacheMu.Lock()
 	defer cacheMu.Unlock()
