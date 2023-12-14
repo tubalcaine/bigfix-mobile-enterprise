@@ -60,6 +60,11 @@ func ResetCache() {
 	cacheInstance = nil
 }
 
+// AddServer adds a BigFix server to the cache.
+// It creates a new cache instance for the server if it doesn't already exist.
+// The server is identified by its URL, username, and password.
+// The poolSize parameter specifies the maximum number of connections in the connection pool.
+// Returns the updated BigFixCache instance and an error if the server cache already exists.
 func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) (*BigFixCache, error) {
 	baseURL := getBaseUrl(url)
 
@@ -87,6 +92,10 @@ func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) 
 	return nil, fmt.Errorf("server cache %s already exists", baseURL)
 }
 
+// getBaseUrl returns the base URL extracted from the given full URL.
+// It parses the full URL and extracts the scheme, host, and port (if present).
+// The base URL is then constructed by combining the scheme, host, and port.
+// If the full URL is invalid, an empty string is returned.
 func getBaseUrl(fullURL string) string {
 	parsedURL, err := url.Parse(fullURL)
 	if err != nil {
@@ -106,6 +115,10 @@ func getBaseUrl(fullURL string) string {
 	return scheme + "://" + host + ":" + port
 }
 
+// silentGet is a wrapper around Get that does not print to stderr.
+// It is intended to be called as a goroutine to load the cache
+// with the most commonly accessed data in the background. It ignores
+// errors.
 func (cache *BigFixCache) silentGet(url string) {
 	fmt.Fprintf(os.Stderr, "Silent GET URL: %s\n", url)
 	res, err := cache.Get(url)
