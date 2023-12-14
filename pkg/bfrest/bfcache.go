@@ -1,3 +1,6 @@
+// Package bfrest provides a cache implementation for BigFix servers and their data.
+// It includes functionality to add servers to the cache, retrieve data from the cache,
+// and populate the cache with commonly accessed data.
 package bfrest
 
 import (
@@ -11,11 +14,16 @@ import (
 	"time"
 )
 
+// BigFixCache is a cache of BigFix servers and their data.
+// It is a singleton that is accessed by multiple goroutines.
+// It contains a map of BigFixServerCache instances.
 type BigFixCache struct {
 	ServerCache *sync.Map
 	MaxAge      uint64
 }
 
+// BigFixServerCache represents a cache for storing one BigFix
+// server's information. It contains a map of CacheItems.
 type BigFixServerCache struct {
 	ServerName string
 	ServerUser string
@@ -25,6 +33,13 @@ type BigFixServerCache struct {
 	MaxAge     uint64
 }
 
+// CacheItem represents the result of a single BigFix GET result
+// from a single BigFix server. This is stored in the CacheMap of
+// a BigFixServerCache.
+// Timestamp represents the time when the cache item was created.
+// RawXML stores the raw XML data associated with the cache item.
+// -- In the future we may discard this data after unmarshalling it.
+// Json stores the JSON representation of the cache item.
 type CacheItem struct {
 	Timestamp int64
 	RawXML    string
@@ -34,7 +49,7 @@ type CacheItem struct {
 var cacheInstance *BigFixCache
 var cacheMu = &sync.Mutex{}
 
-// Singleton cache constructor
+// GetCache is a singleton cache constructor
 func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	cacheMu.Lock()
 	if maxAgeSeconds == 0 {
@@ -52,7 +67,7 @@ func GetCache(maxAgeSeconds uint64) *BigFixCache {
 	return cacheInstance
 }
 
-// This should only be called for testing purposes. There is
+// ResetCache should only be called for testing purposes. There is
 // no reason to reset the cache in production.
 func ResetCache() {
 	cacheMu.Lock()
