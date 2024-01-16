@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
 
 type Config struct {
 	AppCacheTimeout uint64         `json:"app_cache_timeout"`
 	BigFixServers   []BigFixServer `json:"bigfix_servers"`
+	ListenPort      int            `json:"listen_port"`
 }
 
 type BigFixServer struct {
@@ -60,8 +63,49 @@ func main() {
 		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
 	}
 
-	// At this point we will start a web service, but for now, just loop
-	// and wait for input so the program doesn't exit.
+	r := gin.Default()
+
+	r.GET("/urls", func(c *gin.Context) {
+		// TODO: Implement the handler
+		c.JSON(200, gin.H{
+			"message": "urls",
+		})
+	})
+
+	r.GET("/servers", func(c *gin.Context) {
+		// TODO: Implement the handler
+		c.JSON(200, gin.H{
+			"message": "servers",
+		})
+	})
+
+	r.GET("/help", func(c *gin.Context) {
+		// TODO: Implement the handler
+		c.JSON(200, gin.H{
+			"message": "help",
+		})
+	})
+
+	r.GET("/summary", func(c *gin.Context) {
+		// TODO: Implement the handler
+		c.JSON(200, gin.H{
+			"message": "summary",
+		})
+	})
+
+	r.GET("/cache", func(c *gin.Context) {
+		// TODO: Implement the handler
+		c.JSON(200, gin.H{
+			"message": "cache",
+		})
+	})
+
+	// Run the web server in a goroutine so we can continue to process
+	// input from the user.
+
+	go r.Run(":" + strconv.Itoa(config.ListenPort)) // listen and serve on specified port
+
+	// loop and wait for input so the program doesn't exit.
 	for {
 		fmt.Println("\n\nEnter a url or command (exit to terminate): ")
 		var query string
