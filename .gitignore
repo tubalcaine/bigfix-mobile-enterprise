@@ -24,4 +24,4 @@ cmd/bem/bem
 .vscode/launch.json
 training_xml/get_training_xml.sh
 training_xml/get_training_xml.sh
-go.sum
+cmd/bem/wholeCache.json

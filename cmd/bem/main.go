@@ -129,6 +129,55 @@ func main() {
 			continue
 		}
 
+		if query == "write" {
+			fmt.Println("Enter the file name:")
+			var fileName string
+			fmt.Scanln(&fileName)
+
+			file, err := os.Create(fileName)
+			if err != nil {
+				fmt.Println("Error creating file:", err)
+				continue
+			}
+			defer file.Close()
+
+			cache.ServerCache.Range(func(key, value interface{}) bool {
+				server := value.(*bfrest.BigFixServerCache)
+				serverData := make(map[string]interface{})
+				serverData["ServerName"] = server.ServerName
+				serverData["CacheItems"] = make([]map[string]interface{}, 0)
+
+				server.CacheMap.Range(func(key, value interface{}) bool {
+					cacheItem := value.(*bfrest.CacheItem)
+					itemData := make(map[string]interface{})
+					itemData["Key"] = key.(string)
+					itemData["Value"] = cacheItem.Json
+					itemData["Timestamp"] = cacheItem.Timestamp
+
+					serverData["CacheItems"] = append(serverData["CacheItems"].([]map[string]interface{}), itemData)
+
+					return true
+				})
+
+				jsonData, err := json.MarshalIndent(serverData, "", "\t")
+				if err != nil {
+					fmt.Println("Error marshaling JSON:", err)
+					return true
+				}
+
+				_, err = file.Write(jsonData)
+				if err != nil {
+					fmt.Println("Error writing to file:", err)
+					return true
+				}
+
+				return true
+			})
+
+			fmt.Println("Cache written to file:", fileName)
+			continue
+		}
+
 		if query == "summary" {
 			cache.ServerCache.Range(func(key, value interface{}) bool {
 				server := value.(*bfrest.BigFixServerCache)
@@ -157,6 +206,7 @@ func main() {
 			fmt.Println("Commands:")
 			fmt.Println("\tcache - display the current cache")
 			fmt.Println("\tsummary - display a summary of the cache")
+			fmt.Println("\twrite - write the cache to a file")
 			fmt.Println("\thelp - display this help")
 			fmt.Println("\texit - terminate the program")
 			fmt.Println("\t<url> - retrieve the url from the cache")
