@@ -151,7 +151,8 @@ func main() {
 					cacheItem := value.(*bfrest.CacheItem)
 					itemData := make(map[string]interface{})
 					itemData["Key"] = key.(string)
-					itemData["Value"] = cacheItem.Json
+					itemData["Json"] = cacheItem.Json
+					itemData["RawXML"] = cacheItem.RawXML
 					itemData["Timestamp"] = cacheItem.Timestamp
 
 					serverData["CacheItems"] = append(serverData["CacheItems"].([]map[string]interface{}), itemData)
