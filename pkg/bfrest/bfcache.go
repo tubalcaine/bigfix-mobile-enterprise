@@ -135,7 +135,6 @@ func getBaseUrl(fullURL string) string {
 // with the most commonly accessed data in the background. It ignores
 // errors.
 func (cache *BigFixCache) silentGet(url string) {
-	fmt.Fprintf(os.Stderr, "Silent GET URL: %s\n", url)
 	res, err := cache.Get(url)
 
 	if err != nil {
@@ -153,8 +152,6 @@ func (cache *BigFixCache) silentGet(url string) {
 // If the server cache does not exist for the given URL, an error is returned.
 func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
-
-	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
 
 	scValue, ok := cache.ServerCache.Load(baseURL)
 

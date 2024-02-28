@@ -25,3 +25,6 @@ cmd/bem/bem
 training_xml/get_training_xml.sh
 training_xml/get_training_xml.sh
 cmd/bem/wholeCache.json
+cmd/bem/pixel7a.key
+cmd/bem/pixel7a.pub
+cmd/bem/fullCache.json

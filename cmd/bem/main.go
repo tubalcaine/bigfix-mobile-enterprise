@@ -1,7 +1,11 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"log"
@@ -18,6 +22,8 @@ type Config struct {
 	AppCacheTimeout uint64         `json:"app_cache_timeout"`
 	BigFixServers   []BigFixServer `json:"bigfix_servers"`
 	ListenPort      int            `json:"listen_port"`
+	CertPath        string         `json:"cert_path"`
+	KeyPath         string         `json:"key_path"`
 }
 
 type BigFixServer struct {
@@ -66,10 +72,21 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/urls", func(c *gin.Context) {
-		// TODO: Implement the handler
-		c.JSON(200, gin.H{
-			"message": "urls",
-		})
+		url := c.Query("url")
+		fmt.Print("URL: ", url, "\n")
+		cacheItem, err := cache.Get(url)
+		fmt.Print(err, "\n")
+
+		if err == nil {
+			c.JSON(200, gin.H{
+				"cacheitem": cacheItem.Json,
+			})
+		} else {
+			c.JSON(404, gin.H{
+				"cacheitem": "",
+				"error":     err.Error(),
+			})
+		}
 	})
 
 	r.GET("/servers", func(c *gin.Context) {
@@ -100,10 +117,17 @@ func main() {
 		})
 	})
 
-	// Run the web server in a goroutine so we can continue to process
-	// input from the user.
+	// Configure TLS
+	// Remove the declaration of tlsConfig since it is not being used
+	// tlsConfig := &tls.Config{
+	//     MinVersion: tls.VersionTLS12,
+	// }
 
-	go r.Run(":" + strconv.Itoa(config.ListenPort)) // listen and serve on specified port
+	if config.KeyPath != "" {
+		go r.RunTLS(":"+strconv.Itoa(config.ListenPort), config.CertPath, config.KeyPath) // listen and serve on specified port with TLS
+	} else {
+		go r.Run(":" + strconv.Itoa(config.ListenPort)) // listen and serve on specified port
+	}
 
 	// loop and wait for input so the program doesn't exit.
 	for {
@@ -126,6 +150,65 @@ func main() {
 
 				return true
 			})
+			continue
+		}
+
+		if query == "makekey" {
+			fmt.Println("Enter the key file name:")
+			var keyFileName string
+			fmt.Scanln(&keyFileName)
+
+			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			if err != nil {
+				fmt.Println("Error generating private key:", err)
+				continue
+			}
+
+			publicKey := &privateKey.PublicKey
+
+			// Save private key to file
+			privateKeyFile, err := os.Create(keyFileName + ".key")
+			if err != nil {
+				fmt.Println("Error creating private key file:", err)
+				continue
+			}
+			defer privateKeyFile.Close()
+
+			privateKeyPEM := &pem.Block{
+				Type:  "RSA PRIVATE KEY",
+				Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+			}
+			err = pem.Encode(privateKeyFile, privateKeyPEM)
+			if err != nil {
+				fmt.Println("Error encoding private key:", err)
+				continue
+			}
+
+			// Save public key to file
+			publicKeyFile, err := os.Create(keyFileName + ".pub")
+			if err != nil {
+				fmt.Println("Error creating public key file:", err)
+				continue
+			}
+			defer publicKeyFile.Close()
+
+			publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+			if err != nil {
+				fmt.Println("Error marshaling public key:", err)
+				continue
+			}
+
+			publicKeyPEM := &pem.Block{
+				Type:  "PUBLIC KEY",
+				Bytes: publicKeyBytes,
+			}
+			err = pem.Encode(publicKeyFile, publicKeyPEM)
+			if err != nil {
+				fmt.Println("Error encoding public key:", err)
+				continue
+			}
+
+			fmt.Println("Key pair generated successfully.")
 			continue
 		}
 
@@ -208,6 +291,7 @@ func main() {
 			fmt.Println("\tcache - display the current cache")
 			fmt.Println("\tsummary - display a summary of the cache")
 			fmt.Println("\twrite - write the cache to a file")
+			fmt.Println("\tmakekey - generate a new RSA key pair for client authentication")
 			fmt.Println("\thelp - display this help")
 			fmt.Println("\texit - terminate the program")
 			fmt.Println("\t<url> - retrieve the url from the cache")
