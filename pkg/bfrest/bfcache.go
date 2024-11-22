@@ -1,7 +1,8 @@
-// Package bfrest provides a cache implementation for BigFix servers and their data.
+package bfrest
+
+// The package bfrest provides a cache implementation for BigFix servers and their data.
 // It includes functionality to add servers to the cache, retrieve data from the cache,
 // and populate the cache with commonly accessed data.
-package bfrest
 
 import (
 	"encoding/json"
