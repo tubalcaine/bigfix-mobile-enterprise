@@ -90,31 +90,90 @@ func main() {
 	})
 
 	r.GET("/servers", func(c *gin.Context) {
-		// TODO: Implement the handler
+		var serverNames []string
+
+		cache.ServerCache.Range(func(key, value interface{}) bool {
+			server := value.(*bfrest.BigFixServerCache)
+			serverNames = append(serverNames, server.ServerName)
+			return true
+		})
+
 		c.JSON(200, gin.H{
-			"message": "servers",
+			"ServerNames":     serverNames,
+			"NumberOfServers": len(serverNames),
 		})
 	})
 
 	r.GET("/help", func(c *gin.Context) {
-		// TODO: Implement the handler
-		c.JSON(200, gin.H{
-			"message": "help",
-		})
+		endpoints := []string{
+			"/urls",
+			"/servers",
+			"/summary",
+			"/cache",
+			"/help",
+		}
+		htmlContent := "<html><body><h1>Available Endpoints</h1><ul>"
+		for _, endpoint := range endpoints {
+			htmlContent += "<li>" + endpoint + "</li>"
+		}
+		htmlContent += "</ul></body></html>"
+		c.Data(200, "text/html; charset=utf-8", []byte(htmlContent))
 	})
 
 	r.GET("/summary", func(c *gin.Context) {
-		// TODO: Implement the handler
-		c.JSON(200, gin.H{
-			"message": "summary",
+		summary := make(map[string]interface{})
+		var totalSize int64
+
+		cache.ServerCache.Range(func(key, value interface{}) bool {
+			server := value.(*bfrest.BigFixServerCache)
+			serverSummary := make(map[string]interface{})
+			count, current, expired := 0, 0, 0
+			var serverSize int64
+
+			server.CacheMap.Range(func(key, value interface{}) bool {
+				v := value.(*bfrest.CacheItem)
+				count++
+				itemSize := int64(len(v.Json) + len(v.RawXML))
+				serverSize += itemSize
+				if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
+					expired++
+				} else {
+					current++
+				}
+				return true
+			})
+
+			serverSummary["total_items"] = count
+			serverSummary["expired_items"] = expired
+			serverSummary["current_items"] = current
+			serverSummary["serverSize"] = serverSize
+			summary[server.ServerName] = serverSummary
+			totalSize += serverSize
+
+			return true
 		})
+
+		summary["totalSize"] = totalSize
+		c.JSON(200, summary)
 	})
 
 	r.GET("/cache", func(c *gin.Context) {
-		// TODO: Implement the handler
-		c.JSON(200, gin.H{
-			"message": "cache",
+		cacheData := make(map[string][]string)
+
+		cache.ServerCache.Range(func(key, value interface{}) bool {
+			server := value.(*bfrest.BigFixServerCache)
+			var cacheItems []string
+
+			server.CacheMap.Range(func(key, value interface{}) bool {
+				cacheItems = append(cacheItems, key.(string))
+				return true
+			})
+
+			cacheData[server.ServerName] = cacheItems
+			return true
 		})
+
+		c.JSON(200, cacheData)
 	})
 
 	// Configure TLS
