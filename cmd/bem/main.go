@@ -24,6 +24,7 @@ type Config struct {
 	ListenPort      int            `json:"listen_port"`
 	CertPath        string         `json:"cert_path"`
 	KeyPath         string         `json:"key_path"`
+	KeySize         int            `json:"keysize"`
 }
 
 type BigFixServer struct {
@@ -217,7 +218,12 @@ func main() {
 			var keyFileName string
 			fmt.Scanln(&keyFileName)
 
-			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			// Handle the case where key size is not provided in the config file
+			keySize := config.KeySize
+			if keySize == 0 {
+				keySize = 2048
+			}
+			privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
 			if err != nil {
 				fmt.Println("Error generating private key:", err)
 				continue

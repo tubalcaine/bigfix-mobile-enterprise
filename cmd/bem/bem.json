@@ -1,5 +1,6 @@
 {
   "app_cache_timeout": 0,
+  "keysize": 2048,
   "bigfix_servers": [
     {
         "url": "https://10.10.220.60:52311",
