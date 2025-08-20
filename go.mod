@@ -3,7 +3,7 @@ module github.com/tubalcaine/bigfix-mobile-enterprise
 go 1.18
 
 require (
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.9.1
 )
 
