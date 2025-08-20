@@ -2,7 +2,10 @@ module github.com/tubalcaine/bigfix-mobile-enterprise
 
 go 1.18
 
-require github.com/gin-gonic/gin v1.9.1
+require (
+	github.com/fsnotify/fsnotify v1.7.0
+	github.com/gin-gonic/gin v1.9.1
+)
 
 require (
 	github.com/bytedance/sonic v1.11.0 // indirect

@@ -17,5 +17,7 @@
         "poolsize": 6
       }
     ],
-  "listen_port": 17967
+  "listen_port": 17967,
+  "registration_dir": "./registrations",
+  "requests_dir": "./requests"
 }
