@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<xs:schema id="BESAPI" xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified" version="11.0.0.175">
+<xs:schema id="BESAPI" xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified" version="11.0.4.60">
 
 	<xs:element name="BESAPI">
 		<xs:complexType>
@@ -168,6 +168,21 @@
 					</xs:complexType>
 				</xs:element>
 
+				<xs:element name="ArchiveManagerFile">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="FileName" type="xs:normalizedString"/>
+							<xs:element name="FileLocation" type="xs:normalizedString"/>
+							<xs:element name="FileSize" type="xs:nonNegativeInteger"/>
+							<xs:element name="ComputerId" type="xs:nonNegativeInteger"/>
+							<xs:element name="Sha256Checksum" type="xs:normalizedString"/>
+							<xs:element name="Sequence" type="xs:nonNegativeInteger"/>
+							<xs:element name="FileReceivedAt" type="xs:nonNegativeInteger"/>
+						</xs:sequence>
+						<xs:attribute name="Resource" type="xs:normalizedString"/> 
+					</xs:complexType>
+				</xs:element>
+				
 				<xs:element name="ActionResults">
 					<xs:complexType>
 						<xs:sequence>
@@ -498,6 +513,39 @@
 					</xs:complexType>
 				</xs:element>				
 
+				<xs:element name="IDPDirectory">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ID" type="xs:nonNegativeInteger" minOccurs="0"/>							
+							<xs:element name="Name" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="IdpType" type="xs:nonNegativeInteger" minOccurs="1" maxOccurs="1"/>
+							<xs:element name="IsGlobalCatalog" type="xs:boolean" minOccurs="0"/>
+							<xs:element name="UseSSL" type="xs:boolean" minOccurs="0"/>
+							<xs:element name="AllowEmptyPasswords" type="xs:boolean" minOccurs="0"/>
+							<xs:element name="BaseDN" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="UIDAttribute" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="UserFilter" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="GroupFilter" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="TenantID" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="ClientID" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="ClientSecret" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="JwtCertificateServerPath" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="JwtCertificate" type="xs:string" minOccurs="0"/>
+							<xs:element name="PrivateKeyPassword" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="User" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="Password" type="xs:normalizedString" minOccurs="0"/>
+							<xs:element name="Servers" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Server" type="LDAPServer" minOccurs="1" maxOccurs="4"/>	
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="Resource" type="xs:normalizedString"/>
+					</xs:complexType>
+				</xs:element>
+
 				<xs:element name="LDAPDirectory">
 					<xs:complexType>
 						<xs:sequence>
@@ -684,6 +732,37 @@
 							<xs:element name="RelayOperatorSite" type="RelaySite" minOccurs="0" maxOccurs="unbounded"/>
 							<xs:element name="RelayExternalSite" type="RelaySite" minOccurs="0" maxOccurs="unbounded"/>
 						</xs:sequence>	
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="Explorer">
+					<xs:complexType>
+						<xs:sequence>
+				   			<xs:element name="URL" type="xs:normalizedString"/>
+			   			</xs:sequence>
+						<xs:attribute name="Resource" type="xs:string"/>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="ExplorerDetails">
+					<xs:complexType>
+						<xs:element name="Explorer">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="URL" type="xs:normalizedString"/>
+									<xs:element name="Name" type="xs:normalizedString"/>
+									<xs:element name="Priority" type="xs:nonNegativeInteger"/>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="ExplorerPriority">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Priority" type="xs:nonNegativeInteger" minOccurs="1" maxOccurs="1"/>
+						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
 
