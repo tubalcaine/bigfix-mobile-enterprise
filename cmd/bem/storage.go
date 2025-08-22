@@ -33,7 +33,12 @@ func saveRegistrationOTPs() error {
 	registrationMutex.Lock()
 	defer registrationMutex.Unlock()
 	
-	filename := filepath.Join(configDir, "registration_otps.json")
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(registrationDataDir, 0700); err != nil {
+		return fmt.Errorf("failed to create registration data directory: %v", err)
+	}
+	
+	filename := filepath.Join(registrationDataDir, "registration_otps.json")
 	
 	// Create backup
 	if err := createBackup(filename); err != nil {
@@ -55,7 +60,7 @@ func saveRegistrationOTPs() error {
 }
 
 func loadRegistrationOTPs() error {
-	filename := filepath.Join(configDir, "registration_otps.json")
+	filename := filepath.Join(registrationDataDir, "registration_otps.json")
 	
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		registrationOTPs = make([]RegistrationOTP, 0)
@@ -81,7 +86,12 @@ func saveRegisteredClients() error {
 	registrationMutex.Lock()
 	defer registrationMutex.Unlock()
 	
-	filename := filepath.Join(configDir, "registered_clients.json")
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(registrationDataDir, 0700); err != nil {
+		return fmt.Errorf("failed to create registration data directory: %v", err)
+	}
+	
+	filename := filepath.Join(registrationDataDir, "registered_clients.json")
 	
 	// Create backup
 	if err := createBackup(filename); err != nil {
@@ -103,7 +113,7 @@ func saveRegisteredClients() error {
 }
 
 func loadRegisteredClients() error {
-	filename := filepath.Join(configDir, "registered_clients.json")
+	filename := filepath.Join(registrationDataDir, "registered_clients.json")
 	
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		registeredClients = make([]RegisteredClient, 0)

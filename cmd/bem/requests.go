@@ -120,10 +120,19 @@ func handleRegistrationRequest(c *gin.Context, config Config) {
 	filename, err := createRegistrationRequestFile(clientName, config.RequestsDir)
 	if err != nil {
 		log.Printf("Failed to create registration request for %s: %v", clientName, err)
-		c.JSON(500, RegistrationRequestResponse{
-			Success: false,
-			Message: err.Error(),
-		})
+		
+		// Check if this is a "file already exists" error
+		if strings.Contains(err.Error(), "registration request already exists") {
+			c.JSON(409, RegistrationRequestResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+		} else {
+			c.JSON(500, RegistrationRequestResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+		}
 		return
 	}
 	

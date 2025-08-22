@@ -138,7 +138,7 @@ func getBaseUrl(fullURL string) string {
 func (cache *BigFixCache) silentGet(url string) {
 	res, err := cache.Get(url)
 
-	if err != nil {
+	if res == nil || err != nil {
 		fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
 		fmt.Fprintln(os.Stderr, res)
 		fmt.Fprintf(os.Stderr, "Silent GET failed: %s\n", err)
@@ -161,7 +161,7 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		return nil, fmt.Errorf("server cache does not exist for %s", baseURL)
 	}
 
-	// Make the type assertion and handle failureserenity:1
+	// Make the type assertion and handle failure
 	sc, _ := scValue.(*BigFixServerCache)
 
 	// We now have the server's cache. Check to see if we have the
@@ -230,23 +230,27 @@ func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
 		err = xml.Unmarshal(([]byte)(rawXML), &besapi)
 		if err != nil {
 			sc.cpool.Release(conn)
+fmt.Printf("DEBUG.BESAPI: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", url, err, rawXML)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&besapi)
 		if err != nil {
+fmt.Printf("DEBUG.BESAPI: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", url, err, jsonValue)
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 	} else {
 		err = xml.Unmarshal(([]byte)(rawXML), &bes)
 		if err != nil {
+fmt.Printf("DEBUG.BES: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", url, err, rawXML)
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&bes)
 		if err != nil {
+fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", url, err, jsonValue)
 			sc.cpool.Release(conn)
 			return nil, err
 		}

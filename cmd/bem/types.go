@@ -13,14 +13,15 @@ var (
 
 // Configuration structures
 type Config struct {
-	AppCacheTimeout uint64         `json:"app_cache_timeout"`
-	BigFixServers   []BigFixServer `json:"bigfix_servers"`
-	ListenPort      int            `json:"listen_port"`
-	CertPath        string         `json:"cert_path"`
-	KeyPath         string         `json:"key_path"`
-	KeySize         int            `json:"keysize"`
-	RegistrationDir string         `json:"registration_dir"`
-	RequestsDir     string         `json:"requests_dir"`
+	AppCacheTimeout     uint64         `json:"app_cache_timeout"`
+	BigFixServers       []BigFixServer `json:"bigfix_servers"`
+	ListenPort          int            `json:"listen_port"`
+	CertPath            string         `json:"cert_path"`
+	KeyPath             string         `json:"key_path"`
+	KeySize             int            `json:"keysize"`
+	RegistrationDir     string         `json:"registration_dir"`
+	RequestsDir         string         `json:"requests_dir"`
+	RegistrationDataDir string         `json:"registration_data_dir"`
 }
 
 type BigFixServer struct {
@@ -64,12 +65,13 @@ type RegisterResponse struct {
 // Global state variables
 var (
 	// Global state for client registration
-	registrationOTPs    []RegistrationOTP
-	registeredClients   []RegisteredClient
-	registrationMutex   sync.RWMutex
-	configDir          string
+	registrationOTPs      []RegistrationOTP
+	registeredClients     []RegisteredClient
+	registrationMutex     sync.RWMutex
+	configDir            string
+	registrationDataDir  string
 	
 	// Session management for cookie-based admin access
-	activeSessions      map[string]time.Time // sessionToken -> expiresAt
-	sessionMutex        sync.RWMutex
+	activeSessions        map[string]time.Time // sessionToken -> expiresAt
+	sessionMutex          sync.RWMutex
 )

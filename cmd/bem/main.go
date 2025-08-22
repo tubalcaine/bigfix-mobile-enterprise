@@ -44,6 +44,12 @@ func main() {
 	// Set up configuration directory for persistent storage
 	configDir = filepath.Dir(*configFile)
 	
+	// Set default registration data directory if not configured
+	registrationDataDir = config.RegistrationDataDir
+	if registrationDataDir == "" {
+		registrationDataDir = configDir // fallback to config directory
+	}
+	
 	// Load existing registration data
 	if err := loadRegistrationOTPs(); err != nil {
 		log.Fatal("Failed to load registration OTPs:", err)
@@ -254,12 +260,79 @@ func main() {
 			continue
 		}
 
+		if query == "registrations" {
+			fmt.Println("\n=== REGISTRATION STATUS ===")
+			
+			// Registration Requests (OTPs)
+			registrationMutex.RLock()
+			fmt.Printf("\nRegistration Requests (%d):\n", len(registrationOTPs))
+			if len(registrationOTPs) == 0 {
+				fmt.Println("  (none)")
+			} else {
+				for i, otp := range registrationOTPs {
+					fmt.Printf("  %d. %s\n", i+1, otp.ClientName)
+					fmt.Printf("     Key: %s\n", otp.OneTimeKey)
+					fmt.Printf("     Created: %s\n", otp.CreatedAt.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Lifespan: %d days\n", otp.KeyLifespanDays)
+					if otp.RequestedBy != "" {
+						fmt.Printf("     Requested by: %s\n", otp.RequestedBy)
+					}
+					fmt.Println()
+				}
+			}
+			
+			// Registered Clients  
+			fmt.Printf("Registered Clients (%d):\n", len(registeredClients))
+			if len(registeredClients) == 0 {
+				fmt.Println("  (none)")
+			} else {
+				for i, client := range registeredClients {
+					fmt.Printf("  %d. %s\n", i+1, client.ClientName)
+					fmt.Printf("     Registered: %s\n", client.RegisteredAt.Format("2006-01-02 15:04:05"))
+					if client.ExpiresAt != nil {
+						fmt.Printf("     Expires: %s\n", client.ExpiresAt.Format("2006-01-02 15:04:05"))
+					} else {
+						fmt.Printf("     Expires: Never\n")
+					}
+					fmt.Printf("     Last Used: %s\n", client.LastUsed.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Key Lifespan: %d days\n", client.KeyLifespanDays)
+					fmt.Println()
+				}
+			}
+			registrationMutex.RUnlock()
+			
+			// Active Sessions
+			sessionMutex.RLock()
+			fmt.Printf("Active OTP Sessions (%d):\n", len(activeSessions))
+			if len(activeSessions) == 0 {
+				fmt.Println("  (none)")
+			} else {
+				i := 1
+				now := time.Now()
+				for token, expiresAt := range activeSessions {
+					status := "Active"
+					if now.After(expiresAt) {
+						status = "Expired"
+					}
+					fmt.Printf("  %d. Session Token: %s...\n", i, token[:8])
+					fmt.Printf("     Expires: %s\n", expiresAt.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Status: %s\n", status)
+					fmt.Println()
+					i++
+				}
+			}
+			sessionMutex.RUnlock()
+			
+			continue
+		}
+
 		if query == "help" {
 			fmt.Println("Commands:")
 			fmt.Println("\tcache - display the current cache")
 			fmt.Println("\tsummary - display a summary of the cache")
 			fmt.Println("\twrite - write the cache to a file")
 			fmt.Println("\tmakekey - generate a new RSA key pair for client authentication")
+			fmt.Println("\tregistrations - display registration requests, clients, and sessions")
 			fmt.Println("\thelp - display this help")
 			fmt.Println("\texit - terminate the program")
 			fmt.Println("\t<url> - retrieve the url from the cache")

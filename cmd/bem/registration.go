@@ -91,10 +91,21 @@ func watchRegistrationDirectory(dir string) {
 		log.Printf("Error creating filesystem watcher: %v", err)
 		return
 	}
-	defer watcher.Close()
 	
-	// Start monitoring goroutine
+	// Add the directory to watch
+	err = watcher.Add(dir)
+	if err != nil {
+		log.Printf("Error watching registration directory %s: %v", dir, err)
+		watcher.Close()
+		return
+	}
+	
+	log.Printf("Watching registration directory: %s", dir)
+	
+	// Start monitoring goroutine - this now runs indefinitely
 	go func() {
+		defer watcher.Close() // Close watcher when goroutine exits
+		
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -119,15 +130,6 @@ func watchRegistrationDirectory(dir string) {
 			}
 		}
 	}()
-	
-	// Add the directory to watch
-	err = watcher.Add(dir)
-	if err != nil {
-		log.Printf("Error watching registration directory %s: %v", dir, err)
-		return
-	}
-	
-	log.Printf("Watching registration directory: %s", dir)
 }
 
 // Client registration and authentication functions

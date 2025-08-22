@@ -70,6 +70,7 @@ func createBFConnection(urlStr string, username string, password string) (*BFCon
 	// Initialize the http.Client. You can also customize this as needed.
 	client := http.Client{
 		Transport: &transport,
+		Timeout: 120 * time.Second,
 	}
 
 	// Return a new BFConnection with the provided details.

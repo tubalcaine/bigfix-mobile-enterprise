@@ -4,8 +4,8 @@
   "bigfix_servers": [
     {
         "url": "https://10.10.220.60:52311",
-        "username": "bf2lab\\mas",
-        "password": "s2s!BigFix",
+        "username": "IEMAdmin",
+        "password": "BigFix!123",
         "maxage": 300,
         "poolsize": 4
       },
