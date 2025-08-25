@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,9 +16,13 @@ import (
 func setupRoutes(r *gin.Engine, cache *bfrest.BigFixCache, config Config) {
 	// OTP endpoint for admin session creation (no authentication required)
 	r.GET("/otp", handleOTPEndpoint)
+	r.POST("/otp", handleOTPEndpoint)
 
 	// Client registration endpoint (no authentication required)
 	r.POST("/register", func(c *gin.Context) {
+		handleRegisterEndpoint(c, config)
+	})
+	r.GET("/register", func(c *gin.Context) {
 		handleRegisterEndpoint(c, config)
 	})
 
@@ -24,24 +30,48 @@ func setupRoutes(r *gin.Engine, cache *bfrest.BigFixCache, config Config) {
 	r.GET("/requestregistration", func(c *gin.Context) {
 		handleRegistrationRequest(c, config)
 	})
+	r.POST("/requestregistration", func(c *gin.Context) {
+		handleRegistrationRequest(c, config)
+	})
 
 	// Help endpoint (no authentication required)
 	r.GET("/help", handleHelpEndpoint)
+	r.POST("/help", handleHelpEndpoint)
+	
+	// Debug endpoint - temporary, no auth required
+	r.GET("/debug/servers", func(c *gin.Context) {
+		handleDebugServersEndpoint(c, cache)
+	})
+	r.POST("/debug/servers", func(c *gin.Context) {
+		handleDebugServersEndpoint(c, cache)
+	})
 
 	// Protected endpoints require authentication
 	r.GET("/urls", func(c *gin.Context) {
+		handleURLsEndpoint(c, cache)
+	})
+	r.POST("/urls", func(c *gin.Context) {
 		handleURLsEndpoint(c, cache)
 	})
 
 	r.GET("/servers", func(c *gin.Context) {
 		handleServersEndpoint(c, cache)
 	})
+	r.POST("/servers", func(c *gin.Context) {
+		handleServersEndpoint(c, cache)
+	})
 
 	r.GET("/summary", func(c *gin.Context) {
 		handleSummaryEndpoint(c, cache)
 	})
+	r.POST("/summary", func(c *gin.Context) {
+		handleSummaryEndpoint(c, cache)
+	})
 
 	r.GET("/cache", func(c *gin.Context) {
+		handleCacheEndpoint(c, cache)
+	})
+	r.POST("/cache", func(c *gin.Context) {
 		handleCacheEndpoint(c, cache)
 	})
 }
@@ -165,14 +195,65 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		return
 	}
 	
-	url := c.Query("url")
-	fmt.Print("URL: ", url, "\n")
+	var url string
+	
+	// Handle both GET and POST methods
+	if c.Request.Method == "POST" {
+		// For POST requests, expect JSON body with url field
+		var requestBody struct {
+			URL string `json:"url"`
+		}
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			c.JSON(400, gin.H{
+				"error": "Invalid JSON body. Expected {\"url\": \"...\"}",
+			})
+			return
+		}
+		url = requestBody.URL
+		fmt.Printf("POST /urls - URL from body: %s\n", url)
+	} else {
+		// For GET requests, get URL from query parameter (existing behavior)
+		url = c.Query("url")
+		fmt.Printf("GET /urls - URL from query: %s\n", url)
+	}
+	
+	if url == "" {
+		c.JSON(400, gin.H{
+			"error": "URL parameter is required",
+		})
+		return
+	}
+	
+	fmt.Printf("Processing cache request for URL: %s\n", url)
 	cacheItem, err := cache.Get(url)
-	fmt.Print(err, "\n")
+	
+	if err != nil {
+		fmt.Printf("Cache error: %v\n", err)
+	} else {
+		fmt.Printf("Cache hit successful\n")
+	}
 
 	if err == nil {
+		// Check if this is a JSON passthrough (from output=json requests)
+		// by looking at the URL to see if it contains output=json
+		var responseData interface{}
+		if strings.Contains(url, "output=json") || strings.Contains(url, "format=json") {
+			// For JSON format requests, the cacheItem.Json contains raw JSON from BigFix
+			// We need to parse it and include it directly to avoid double-encoding
+			var jsonData interface{}
+			if jsonErr := json.Unmarshal([]byte(cacheItem.Json), &jsonData); jsonErr == nil {
+				responseData = jsonData
+			} else {
+				// If parsing fails, fall back to string
+				responseData = cacheItem.Json
+			}
+		} else {
+			// For XML->JSON conversion, return as string (existing behavior)
+			responseData = cacheItem.Json
+		}
+		
 		c.JSON(200, gin.H{
-			"cacheitem": cacheItem.Json,
+			"cacheitem": responseData,
 		})
 	} else {
 		c.JSON(404, gin.H{
@@ -180,6 +261,24 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 			"error":     err.Error(),
 		})
 	}
+}
+
+// Debug endpoint to check server cache without authentication
+func handleDebugServersEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
+	var serverNames []string
+	
+	cache.ServerCache.Range(func(key, value interface{}) bool {
+		server := value.(*bfrest.BigFixServerCache)
+		serverNames = append(serverNames, server.ServerName)
+		return true
+	})
+	
+	c.JSON(200, gin.H{
+		"debug": "no-auth-required",
+		"ServerNames":     serverNames,
+		"NumberOfServers": len(serverNames),
+		"message": "This is a debug endpoint. Remove in production.",
+	})
 }
 
 func handleServersEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {

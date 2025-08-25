@@ -207,50 +207,72 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 // It acquires a connection from the BigFixServerCache connection pool, makes a GET request to the URL, and unmarshals the XML response into either a BESAPI or BES struct.
 // The JSON representation of the struct is then marshaled and returned as part of the CacheItem.
 // If any errors occur during the process, the acquired connection is released and the error is returned.
-func retrieveBigFixData(url string, sc *BigFixServerCache) (*CacheItem, error) {
+func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error) {
 	conn, err := sc.cpool.Acquire()
 
 	if err != nil {
-		fmt.Printf("For URL %s\nError acquiring connection: %s\n\n", url, err)
+		fmt.Printf("For URL %s\nError acquiring connection: %s\n\n", urlStr, err)
 		return nil, err
 	}
 
-	rawXML, err := conn.Get(url)
+	rawResponse, err := conn.Get(urlStr)
 
 	if err != nil {
 		sc.cpool.Release(conn)
 		return nil, err
 	}
 
+	// Check if this is an /api/query endpoint with JSON output format
+	parsedURL, parseErr := url.Parse(urlStr)
+	if parseErr == nil && strings.Contains(parsedURL.Path, "/api/query") {
+		queryParams, queryErr := url.ParseQuery(parsedURL.RawQuery)
+		if queryErr == nil {
+			// Check for output=json or format=json parameters
+			outputFormat := queryParams.Get("output")
+			formatParam := queryParams.Get("format")
+			
+			if outputFormat == "json" || formatParam == "json" {
+				// For JSON format requests, pass through the JSON response directly
+				sc.cpool.Release(conn)
+				return &CacheItem{
+					Timestamp: time.Now().Unix(),
+					RawXML:    rawResponse, // Still called RawXML for compatibility, but contains JSON
+					Json:      rawResponse,
+				}, nil
+			}
+		}
+	}
+
+	// Default behavior: parse XML and convert to JSON
 	var besapi BESAPI
 	var bes BES
 	var jsonValue []byte
 
-	if strings.Contains(rawXML, "BESAPI") {
-		err = xml.Unmarshal(([]byte)(rawXML), &besapi)
+	if strings.Contains(rawResponse, "BESAPI") {
+		err = xml.Unmarshal(([]byte)(rawResponse), &besapi)
 		if err != nil {
 			sc.cpool.Release(conn)
-fmt.Printf("DEBUG.BESAPI: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", url, err, rawXML)
+fmt.Printf("DEBUG.BESAPI: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&besapi)
 		if err != nil {
-fmt.Printf("DEBUG.BESAPI: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", url, err, jsonValue)
+fmt.Printf("DEBUG.BESAPI: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 	} else {
-		err = xml.Unmarshal(([]byte)(rawXML), &bes)
+		err = xml.Unmarshal(([]byte)(rawResponse), &bes)
 		if err != nil {
-fmt.Printf("DEBUG.BES: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", url, err, rawXML)
+fmt.Printf("DEBUG.BES: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&bes)
 		if err != nil {
-fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", url, err, jsonValue)
+fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
 			sc.cpool.Release(conn)
 			return nil, err
 		}
@@ -261,7 +283,7 @@ fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s
 	sc.cpool.Release(conn)
 	return &CacheItem{
 		Timestamp: time.Now().Unix(),
-		RawXML:    rawXML,
+		RawXML:    rawResponse,
 		Json:      jStr,
 	}, nil
 }
@@ -335,8 +357,10 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 		go cache.silentGet(site.Resource + "/content")
 	}
 
-	go cache.silentGet(besapi.ActionSite.Resource)
-	go cache.silentGet(besapi.ActionSite.Resource + "/content")
+	if besapi.ActionSite != nil {
+		go cache.silentGet(besapi.ActionSite.Resource)
+		go cache.silentGet(besapi.ActionSite.Resource + "/content")
+	}
 
 	return nil
 }

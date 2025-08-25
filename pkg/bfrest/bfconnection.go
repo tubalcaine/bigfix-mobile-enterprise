@@ -39,7 +39,18 @@ func (c *BFConnection) Get(urlStr string) (string, error) {
 		return "", fmt.Errorf("URL does not match")
 	}
 
-	req, err := http.NewRequest("GET", urlStr, nil)
+	// Properly encode the URL by reconstructing it with encoded query parameters
+	encodedURL := parsedURL.Scheme + "://" + parsedURL.Host + parsedURL.Path
+	if parsedURL.RawQuery != "" {
+		// Re-encode the query parameters to ensure proper escaping
+		values, err := url.ParseQuery(parsedURL.RawQuery)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse query parameters: %v", err)
+		}
+		encodedURL += "?" + values.Encode()
+	}
+
+	req, err := http.NewRequest("GET", encodedURL, nil)
 	if err != nil {
 		return "", err
 	}

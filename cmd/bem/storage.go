@@ -82,10 +82,8 @@ func loadRegistrationOTPs() error {
 	return nil
 }
 
-func saveRegisteredClients() error {
-	registrationMutex.Lock()
-	defer registrationMutex.Unlock()
-	
+// saveRegisteredClientsUnlocked saves without acquiring mutex (caller must hold lock)
+func saveRegisteredClientsUnlocked() error {
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(registrationDataDir, 0700); err != nil {
 		return fmt.Errorf("failed to create registration data directory: %v", err)
@@ -98,18 +96,25 @@ func saveRegisteredClients() error {
 		log.Printf("Warning: Could not create backup of %s: %v", filename, err)
 	}
 	
-	// Write to temporary file first, then rename (atomic operation)
-	tmpFile := filename + ".tmp"
+	// Marshal to JSON
 	data, err := json.MarshalIndent(registeredClients, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal registered clients: %v", err)
 	}
 	
-	if err := os.WriteFile(tmpFile, data, 0600); err != nil {
-		return fmt.Errorf("failed to write registered clients: %v", err)
+	// Write to file with restricted permissions
+	if err := os.WriteFile(filename, data, 0600); err != nil {
+		return fmt.Errorf("failed to write registered clients file: %v", err)
 	}
 	
-	return os.Rename(tmpFile, filename)
+	return nil
+}
+
+func saveRegisteredClients() error {
+	registrationMutex.Lock()
+	defer registrationMutex.Unlock()
+	
+	return saveRegisteredClientsUnlocked()
 }
 
 func loadRegisteredClients() error {

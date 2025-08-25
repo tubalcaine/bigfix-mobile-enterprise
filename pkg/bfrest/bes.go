@@ -2,609 +2,665 @@
 
 package bfrest
 
+// BES represents the root BES element containing all BES content types
 type BES struct {
-	ActionSite *struct {
-		Description          struct{} `xml:"Description"`
-		DisplayName          string   `xml:"DisplayName"`
-		GatherURL            string   `xml:"GatherURL"`
-		GlobalReadPermission bool     `xml:"GlobalReadPermission"`
-		Name                 string   `xml:"Name"`
-		Subscription         struct {
-			Mode string `xml:"Mode"`
-		} `xml:"Subscription"`
-	} `xml:"ActionSite"`
-	Analysis *struct {
-		CVENames    *struct{} `xml:"CVENames"`
-		Category    *string   `xml:"Category"`
-		Delay       *string   `xml:"Delay"`
-		Description string    `xml:"Description"`
-		Domain      *string   `xml:"Domain"`
-		MIMEField   []struct {
-			Name  string `xml:"Name"`
-			Value string `xml:"Value"`
-		} `xml:"MIMEField"`
-		Property []struct {
-			EvaluationPeriod *string `xml:"EvaluationPeriod,attr"`
-			ID               int     `xml:"ID,attr"`
-			Name             string  `xml:"Name,attr"`
-			CharData         string  `xml:",chardata"`
-		} `xml:"Property"`
-		Relevance         []string `xml:"Relevance"`
-		Source            *string  `xml:"Source"`
-		SourceID          *string  `xml:"SourceID"`
-		SourceReleaseDate *string  `xml:"SourceReleaseDate"`
-		SourceSeverity    *string  `xml:"SourceSeverity"`
-		Title             string   `xml:"Title"`
-	} `xml:"Analysis"`
-	Baseline *struct {
-		BaselineComponentCollection struct {
-			BaselineComponentGroup struct {
-				BaselineComponent []struct {
-					ActionName         string `xml:"ActionName,attr"`
-					IncludeInRelevance bool   `xml:"IncludeInRelevance,attr"`
-					Name               string `xml:"Name,attr"`
-					SourceID           int    `xml:"SourceID,attr"`
-					SourceSiteURL      string `xml:"SourceSiteURL,attr"`
-					SyncStatus         string `xml:"SyncStatus,attr"`
-					ActionScript       struct {
-						MIMEType string `xml:"MIMEType,attr"`
-						CharData string `xml:",chardata"`
-					} `xml:"ActionScript"`
-					Relevance       string `xml:"Relevance"`
-					SuccessCriteria struct {
-						Option string `xml:"Option,attr"`
-					} `xml:"SuccessCriteria"`
-				} `xml:"BaselineComponent"`
-			} `xml:"BaselineComponentGroup"`
-		} `xml:"BaselineComponentCollection"`
-		CVENames    struct{} `xml:"CVENames"`
-		Category    struct{} `xml:"Category"`
-		Description string   `xml:"Description"`
-		Domain      string   `xml:"Domain"`
-		MIMEField   struct {
-			Name  string `xml:"Name"`
-			Value string `xml:"Value"`
-		} `xml:"MIMEField"`
-		Relevance      bool     `xml:"Relevance"`
-		SANSID         struct{} `xml:"SANSID"`
-		Source         struct{} `xml:"Source"`
-		SourceID       struct{} `xml:"SourceID"`
-		SourceSeverity struct{} `xml:"SourceSeverity"`
-		Title          string   `xml:"Title"`
-	} `xml:"Baseline"`
-	ComputerGroup *struct {
-		Domain                           string `xml:"Domain"`
-		JoinByIntersection               bool   `xml:"JoinByIntersection"`
-		SearchComponentPropertyReference *struct {
-			Comparison   string `xml:"Comparison,attr"`
-			PropertyName string `xml:"PropertyName,attr"`
-			Relevance    string `xml:"Relevance"`
-			SearchText   string `xml:"SearchText"`
-		} `xml:"SearchComponentPropertyReference"`
-		SearchComponentRelevance *struct {
-			Comparison string `xml:"Comparison,attr"`
-			Relevance  string `xml:"Relevance"`
-		} `xml:"SearchComponentRelevance"`
-		Title string `xml:"Title"`
-	} `xml:"ComputerGroup"`
-	CustomSite *struct {
-		Description          struct{} `xml:"Description"`
-		DisplayName          string   `xml:"DisplayName"`
-		Domain               string   `xml:"Domain"`
-		GatherURL            string   `xml:"GatherURL"`
-		GlobalReadPermission bool     `xml:"GlobalReadPermission"`
-		Name                 string   `xml:"Name"`
-		Subscription         struct {
-			CustomGroup *struct {
-				JoinByIntersection               bool `xml:"JoinByIntersection,attr"`
-				SearchComponentPropertyReference struct {
-					Comparison   string `xml:"Comparison,attr"`
-					PropertyName string `xml:"PropertyName,attr"`
-					Relevance    string `xml:"Relevance"`
-					SearchText   string `xml:"SearchText"`
-				} `xml:"SearchComponentPropertyReference"`
-			} `xml:"CustomGroup"`
-			Mode string `xml:"Mode"`
-		} `xml:"Subscription"`
-	} `xml:"CustomSite"`
-	ExternalSite *struct {
-		Description          struct{} `xml:"Description"`
-		DisplayName          string   `xml:"DisplayName"`
-		GatherURL            string   `xml:"GatherURL"`
-		GlobalReadPermission bool     `xml:"GlobalReadPermission"`
-		Name                 string   `xml:"Name"`
-		Subscription         struct {
-			CustomGroup struct {
-				JoinByIntersection       bool `xml:"JoinByIntersection,attr"`
-				SearchComponentRelevance struct {
-					Comparison string `xml:"Comparison,attr"`
-					Relevance  string `xml:"Relevance"`
-				} `xml:"SearchComponentRelevance"`
-			} `xml:"CustomGroup"`
-			Mode string `xml:"Mode"`
-		} `xml:"Subscription"`
-	} `xml:"ExternalSite"`
-	Fixlet *struct {
-		Action []struct {
-			ID           string `xml:"ID,attr"`
-			ActionScript struct {
-				MIMEType string `xml:"MIMEType,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"ActionScript"`
-			Description struct {
-				Link     string `xml:"Link"`
-				PostLink string `xml:"PostLink"`
-				PreLink  string `xml:"PreLink"`
-			} `xml:"Description"`
-			Settings *struct {
-				ActiveUserRequirement   string `xml:"ActiveUserRequirement"`
-				ActiveUserType          string `xml:"ActiveUserType"`
-				ContinueOnErrors        bool   `xml:"ContinueOnErrors"`
-				EndDateTimeLocalOffset  string `xml:"EndDateTimeLocalOffset"`
-				HasDayOfWeekConstraint  bool   `xml:"HasDayOfWeekConstraint"`
-				HasEndTime              bool   `xml:"HasEndTime"`
-				HasReapplyInterval      bool   `xml:"HasReapplyInterval"`
-				HasReapplyLimit         bool   `xml:"HasReapplyLimit"`
-				HasRetry                bool   `xml:"HasRetry"`
-				HasRunningMessage       bool   `xml:"HasRunningMessage"`
-				HasStartTime            bool   `xml:"HasStartTime"`
-				HasTemporalDistribution bool   `xml:"HasTemporalDistribution"`
-				HasTimeRange            bool   `xml:"HasTimeRange"`
-				HasWhose                bool   `xml:"HasWhose"`
-				IsOffer                 bool   `xml:"IsOffer"`
-				PostActionBehavior      struct {
-					Behavior                   string `xml:"Behavior,attr"`
-					AllowCancel                bool   `xml:"AllowCancel"`
-					PostActionDeadlineBehavior string `xml:"PostActionDeadlineBehavior"`
-					PostActionDeadlineInterval string `xml:"PostActionDeadlineInterval"`
-				} `xml:"PostActionBehavior"`
-				PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-				PreActionShowUI        bool `xml:"PreActionShowUI"`
-				Reapply                bool `xml:"Reapply"`
-				ReapplyLimit           int  `xml:"ReapplyLimit"`
-				UseUTCTime             bool `xml:"UseUTCTime"`
-			} `xml:"Settings"`
-			SettingsLocks *struct {
-				ActionUITitle         bool `xml:"ActionUITitle"`
-				ActiveUserRequirement bool `xml:"ActiveUserRequirement"`
-				ActiveUserType        bool `xml:"ActiveUserType"`
-				AnnounceOffer         bool `xml:"AnnounceOffer"`
-				ContinueOnErrors      bool `xml:"ContinueOnErrors"`
-				DayOfWeekConstraint   bool `xml:"DayOfWeekConstraint"`
-				EndDateTimeOffset     bool `xml:"EndDateTimeOffset"`
-				HasRunningMessage     bool `xml:"HasRunningMessage"`
-				IsOffer               bool `xml:"IsOffer"`
-				OfferCategory         bool `xml:"OfferCategory"`
-				OfferDescriptionHTML  bool `xml:"OfferDescriptionHTML"`
-				PostActionBehavior    struct {
-					AllowCancel bool `xml:"AllowCancel"`
-					Behavior    bool `xml:"Behavior"`
-					Deadline    bool `xml:"Deadline"`
-					Text        bool `xml:"Text"`
-					Title       bool `xml:"Title"`
-				} `xml:"PostActionBehavior"`
-				PreAction struct {
-					AskToSaveWork    bool `xml:"AskToSaveWork"`
-					DeadlineBehavior bool `xml:"DeadlineBehavior"`
-					ShowActionButton bool `xml:"ShowActionButton"`
-					ShowCancelButton bool `xml:"ShowCancelButton"`
-					ShowConfirmation bool `xml:"ShowConfirmation"`
-					Text             bool `xml:"Text"`
-				} `xml:"PreAction"`
-				PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-				PreActionShowUI        bool `xml:"PreActionShowUI"`
-				Reapply                bool `xml:"Reapply"`
-				ReapplyLimit           bool `xml:"ReapplyLimit"`
-				RetryCount             bool `xml:"RetryCount"`
-				RetryWait              bool `xml:"RetryWait"`
-				RunningMessage         struct {
-					Text bool `xml:"Text"`
-				} `xml:"RunningMessage"`
-				StartDateTimeOffset  bool `xml:"StartDateTimeOffset"`
-				TemporalDistribution bool `xml:"TemporalDistribution"`
-				TimeRange            bool `xml:"TimeRange"`
-				Whose                bool `xml:"Whose"`
-			} `xml:"SettingsLocks"`
-			SuccessCriteria *struct {
-				Option   string `xml:"Option,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"SuccessCriteria"`
-		} `xml:"Action"`
-		CVENames      *string `xml:"CVENames"`
-		Category      *string `xml:"Category"`
-		DefaultAction *struct {
-			ID           string `xml:"ID,attr"`
-			ActionScript struct {
-				MIMEType string `xml:"MIMEType,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"ActionScript"`
-			Description struct {
-				Link     string `xml:"Link"`
-				PostLink string `xml:"PostLink"`
-				PreLink  string `xml:"PreLink"`
-			} `xml:"Description"`
-			Settings *struct {
-				ActiveUserRequirement   string `xml:"ActiveUserRequirement"`
-				ActiveUserType          string `xml:"ActiveUserType"`
-				ContinueOnErrors        bool   `xml:"ContinueOnErrors"`
-				HasDayOfWeekConstraint  bool   `xml:"HasDayOfWeekConstraint"`
-				HasEndTime              bool   `xml:"HasEndTime"`
-				HasReapplyInterval      bool   `xml:"HasReapplyInterval"`
-				HasReapplyLimit         bool   `xml:"HasReapplyLimit"`
-				HasRetry                bool   `xml:"HasRetry"`
-				HasRunningMessage       bool   `xml:"HasRunningMessage"`
-				HasStartTime            bool   `xml:"HasStartTime"`
-				HasTemporalDistribution bool   `xml:"HasTemporalDistribution"`
-				HasTimeRange            bool   `xml:"HasTimeRange"`
-				HasWhose                bool   `xml:"HasWhose"`
-				IsOffer                 bool   `xml:"IsOffer"`
-				PostActionBehavior      struct {
-					Behavior string `xml:"Behavior,attr"`
-				} `xml:"PostActionBehavior"`
-				PreActionCacheDownload bool   `xml:"PreActionCacheDownload"`
-				PreActionShowUI        bool   `xml:"PreActionShowUI"`
-				Reapply                bool   `xml:"Reapply"`
-				ReapplyInterval        string `xml:"ReapplyInterval"`
-				UseUTCTime             bool   `xml:"UseUTCTime"`
-			} `xml:"Settings"`
-			SettingsLocks *struct {
-				ActionUITitle         bool `xml:"ActionUITitle"`
-				ActiveUserRequirement bool `xml:"ActiveUserRequirement"`
-				ActiveUserType        bool `xml:"ActiveUserType"`
-				AnnounceOffer         bool `xml:"AnnounceOffer"`
-				ContinueOnErrors      bool `xml:"ContinueOnErrors"`
-				DayOfWeekConstraint   bool `xml:"DayOfWeekConstraint"`
-				EndDateTimeOffset     bool `xml:"EndDateTimeOffset"`
-				HasRunningMessage     bool `xml:"HasRunningMessage"`
-				IsOffer               bool `xml:"IsOffer"`
-				OfferCategory         bool `xml:"OfferCategory"`
-				OfferDescriptionHTML  bool `xml:"OfferDescriptionHTML"`
-				PostActionBehavior    struct {
-					AllowCancel bool `xml:"AllowCancel"`
-					Behavior    bool `xml:"Behavior"`
-					Deadline    bool `xml:"Deadline"`
-					Text        bool `xml:"Text"`
-					Title       bool `xml:"Title"`
-				} `xml:"PostActionBehavior"`
-				PreAction struct {
-					AskToSaveWork    bool `xml:"AskToSaveWork"`
-					DeadlineBehavior bool `xml:"DeadlineBehavior"`
-					ShowActionButton bool `xml:"ShowActionButton"`
-					ShowCancelButton bool `xml:"ShowCancelButton"`
-					ShowConfirmation bool `xml:"ShowConfirmation"`
-					Text             bool `xml:"Text"`
-				} `xml:"PreAction"`
-				PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-				PreActionShowUI        bool `xml:"PreActionShowUI"`
-				Reapply                bool `xml:"Reapply"`
-				ReapplyLimit           bool `xml:"ReapplyLimit"`
-				RetryCount             bool `xml:"RetryCount"`
-				RetryWait              bool `xml:"RetryWait"`
-				RunningMessage         struct {
-					Text bool `xml:"Text"`
-				} `xml:"RunningMessage"`
-				StartDateTimeOffset  bool `xml:"StartDateTimeOffset"`
-				TemporalDistribution bool `xml:"TemporalDistribution"`
-				TimeRange            bool `xml:"TimeRange"`
-				Whose                bool `xml:"Whose"`
-			} `xml:"SettingsLocks"`
-			SuccessCriteria *struct {
-				Option   string `xml:"Option,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"SuccessCriteria"`
-		} `xml:"DefaultAction"`
-		Delay          *string `xml:"Delay"`
-		Description    string  `xml:"Description"`
-		Domain         *string `xml:"Domain"`
-		DownloadSize   *int    `xml:"DownloadSize"`
-		GroupRelevance *struct {
-			JoinByIntersection       bool `xml:"JoinByIntersection,attr"`
-			SearchComponentRelevance struct {
-				Comparison string `xml:"Comparison,attr"`
-				Relevance  string `xml:"Relevance"`
-			} `xml:"SearchComponentRelevance"`
-		} `xml:"GroupRelevance"`
-		MIMEField []struct {
-			Name  string `xml:"Name"`
-			Value string `xml:"Value"`
-		} `xml:"MIMEField"`
-		Relevance         []string `xml:"Relevance"`
-		SANSID            *string  `xml:"SANSID"`
-		Source            string   `xml:"Source"`
-		SourceID          string   `xml:"SourceID"`
-		SourceReleaseDate *string  `xml:"SourceReleaseDate"`
-		SourceSeverity    *string  `xml:"SourceSeverity"`
-		Title             string   `xml:"Title"`
-	} `xml:"Fixlet"`
-	MultipleActionGroup *struct {
-		MemberAction []struct {
-			ActionScript struct {
-				MIMEType string `xml:"MIMEType,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"ActionScript"`
-			IncludeInGroupRelevance bool   `xml:"IncludeInGroupRelevance"`
-			Relevance               string `xml:"Relevance"`
-			SuccessCriteria         struct {
-				Option string `xml:"Option,attr"`
-			} `xml:"SuccessCriteria"`
-			Title string `xml:"Title"`
-		} `xml:"MemberAction"`
-		Relevance bool `xml:"Relevance"`
-		Settings  struct {
-			ActiveUserRequirement   string `xml:"ActiveUserRequirement"`
-			ActiveUserType          string `xml:"ActiveUserType"`
-			ContinueOnErrors        bool   `xml:"ContinueOnErrors"`
-			EndDateTimeLocalOffset  string `xml:"EndDateTimeLocalOffset"`
-			HasDayOfWeekConstraint  bool   `xml:"HasDayOfWeekConstraint"`
-			HasEndTime              bool   `xml:"HasEndTime"`
-			HasReapplyInterval      bool   `xml:"HasReapplyInterval"`
-			HasReapplyLimit         bool   `xml:"HasReapplyLimit"`
-			HasRetry                bool   `xml:"HasRetry"`
-			HasRunningMessage       bool   `xml:"HasRunningMessage"`
-			HasStartTime            bool   `xml:"HasStartTime"`
-			HasTemporalDistribution bool   `xml:"HasTemporalDistribution"`
-			HasTimeRange            bool   `xml:"HasTimeRange"`
-			HasWhose                bool   `xml:"HasWhose"`
-			IsOffer                 bool   `xml:"IsOffer"`
-			PostActionBehavior      struct {
-				Behavior string `xml:"Behavior,attr"`
-			} `xml:"PostActionBehavior"`
-			PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-			PreActionShowUI        bool `xml:"PreActionShowUI"`
-			Reapply                bool `xml:"Reapply"`
-			ReapplyLimit           int  `xml:"ReapplyLimit"`
-			UseUTCTime             bool `xml:"UseUTCTime"`
-		} `xml:"Settings"`
-		SettingsLocks struct {
-			ActionUITitle         bool `xml:"ActionUITitle"`
-			ActiveUserRequirement bool `xml:"ActiveUserRequirement"`
-			ActiveUserType        bool `xml:"ActiveUserType"`
-			AnnounceOffer         bool `xml:"AnnounceOffer"`
-			ContinueOnErrors      bool `xml:"ContinueOnErrors"`
-			DayOfWeekConstraint   bool `xml:"DayOfWeekConstraint"`
-			EndDateTimeOffset     bool `xml:"EndDateTimeOffset"`
-			HasRunningMessage     bool `xml:"HasRunningMessage"`
-			IsOffer               bool `xml:"IsOffer"`
-			OfferCategory         bool `xml:"OfferCategory"`
-			OfferDescriptionHTML  bool `xml:"OfferDescriptionHTML"`
-			PostActionBehavior    struct {
-				AllowCancel bool `xml:"AllowCancel"`
-				Behavior    bool `xml:"Behavior"`
-				Deadline    bool `xml:"Deadline"`
-				Text        bool `xml:"Text"`
-				Title       bool `xml:"Title"`
-			} `xml:"PostActionBehavior"`
-			PreAction struct {
-				AskToSaveWork    bool `xml:"AskToSaveWork"`
-				DeadlineBehavior bool `xml:"DeadlineBehavior"`
-				ShowActionButton bool `xml:"ShowActionButton"`
-				ShowCancelButton bool `xml:"ShowCancelButton"`
-				ShowConfirmation bool `xml:"ShowConfirmation"`
-				Text             bool `xml:"Text"`
-			} `xml:"PreAction"`
-			PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-			PreActionShowUI        bool `xml:"PreActionShowUI"`
-			Reapply                bool `xml:"Reapply"`
-			ReapplyLimit           bool `xml:"ReapplyLimit"`
-			RetryCount             bool `xml:"RetryCount"`
-			RetryWait              bool `xml:"RetryWait"`
-			RunningMessage         struct {
-				Text bool `xml:"Text"`
-			} `xml:"RunningMessage"`
-			StartDateTimeOffset  bool `xml:"StartDateTimeOffset"`
-			TemporalDistribution bool `xml:"TemporalDistribution"`
-			TimeRange            bool `xml:"TimeRange"`
-			Whose                bool `xml:"Whose"`
-		} `xml:"SettingsLocks"`
-		Target struct {
-			ComputerID      *int    `xml:"ComputerID"`
-			CustomRelevance *string `xml:"CustomRelevance"`
-		} `xml:"Target"`
-		Title string `xml:"Title"`
-	} `xml:"MultipleActionGroup"`
-	OperatorSite *struct {
-		DisplayName string `xml:"DisplayName"`
-		GatherURL   string `xml:"GatherURL"`
-		Name        string `xml:"Name"`
-	} `xml:"OperatorSite"`
-	Property *struct {
-		EvaluationPeriod *string `xml:"EvaluationPeriod,attr"`
-		Name             string  `xml:"Name,attr"`
-		CharData         string  `xml:",chardata"`
-	} `xml:"Property"`
-	SingleAction *struct {
-		ActionScript struct {
-			MIMEType string `xml:"MIMEType,attr"`
-			CharData string `xml:",chardata"`
-		} `xml:"ActionScript"`
-		IsUrgent  bool `xml:"IsUrgent"`
-		Parameter []struct {
-			Name     string `xml:"Name,attr"`
-			CharData string `xml:",chardata"`
-		} `xml:"Parameter"`
-		Relevance string `xml:"Relevance"`
-		Settings  struct {
-			ActionUITitle           *string `xml:"ActionUITitle"`
-			ActiveUserRequirement   string  `xml:"ActiveUserRequirement"`
-			ActiveUserType          string  `xml:"ActiveUserType"`
-			ContinueOnErrors        bool    `xml:"ContinueOnErrors"`
-			EndDateTimeLocalOffset  *string `xml:"EndDateTimeLocalOffset"`
-			HasDayOfWeekConstraint  bool    `xml:"HasDayOfWeekConstraint"`
-			HasEndTime              bool    `xml:"HasEndTime"`
-			HasReapplyInterval      bool    `xml:"HasReapplyInterval"`
-			HasReapplyLimit         bool    `xml:"HasReapplyLimit"`
-			HasRetry                bool    `xml:"HasRetry"`
-			HasRunningMessage       bool    `xml:"HasRunningMessage"`
-			HasStartTime            bool    `xml:"HasStartTime"`
-			HasTemporalDistribution bool    `xml:"HasTemporalDistribution"`
-			HasTimeRange            bool    `xml:"HasTimeRange"`
-			HasWhose                bool    `xml:"HasWhose"`
-			IsOffer                 bool    `xml:"IsOffer"`
-			PostActionBehavior      struct {
-				Behavior                   string  `xml:"Behavior,attr"`
-				AllowCancel                *bool   `xml:"AllowCancel"`
-				PostActionDeadlineBehavior *string `xml:"PostActionDeadlineBehavior"`
-				PostActionDeadlineInterval *string `xml:"PostActionDeadlineInterval"`
-				Text                       *string `xml:"Text"`
-				Title                      *string `xml:"Title"`
-			} `xml:"PostActionBehavior"`
-			PreAction *struct {
-				AskToSaveWork    bool   `xml:"AskToSaveWork"`
-				DeadlineBehavior string `xml:"DeadlineBehavior"`
-				DeadlineInterval string `xml:"DeadlineInterval"`
-				DeadlineType     string `xml:"DeadlineType"`
-				ShowActionButton bool   `xml:"ShowActionButton"`
-				ShowCancelButton bool   `xml:"ShowCancelButton"`
-				ShowConfirmation bool   `xml:"ShowConfirmation"`
-				Text             string `xml:"Text"`
-			} `xml:"PreAction"`
-			PreActionCacheDownload bool    `xml:"PreActionCacheDownload"`
-			PreActionShowUI        bool    `xml:"PreActionShowUI"`
-			Reapply                bool    `xml:"Reapply"`
-			ReapplyInterval        *string `xml:"ReapplyInterval"`
-			ReapplyLimit           *int    `xml:"ReapplyLimit"`
-			RetryCount             *int    `xml:"RetryCount"`
-			RetryWait              *struct {
-				Behavior string `xml:"Behavior,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"RetryWait"`
-			StartDateTimeLocalOffset *string `xml:"StartDateTimeLocalOffset"`
-			TemporalDistribution     *string `xml:"TemporalDistribution"`
-			TimeRange                *struct {
-				EndTime   string `xml:"EndTime"`
-				StartTime string `xml:"StartTime"`
-			} `xml:"TimeRange"`
-			UseUTCTime bool `xml:"UseUTCTime"`
-		} `xml:"Settings"`
-		SettingsLocks struct {
-			ActionUITitle         bool `xml:"ActionUITitle"`
-			ActiveUserRequirement bool `xml:"ActiveUserRequirement"`
-			ActiveUserType        bool `xml:"ActiveUserType"`
-			AnnounceOffer         bool `xml:"AnnounceOffer"`
-			ContinueOnErrors      bool `xml:"ContinueOnErrors"`
-			DayOfWeekConstraint   bool `xml:"DayOfWeekConstraint"`
-			EndDateTimeOffset     bool `xml:"EndDateTimeOffset"`
-			HasRunningMessage     bool `xml:"HasRunningMessage"`
-			IsOffer               bool `xml:"IsOffer"`
-			OfferCategory         bool `xml:"OfferCategory"`
-			OfferDescriptionHTML  bool `xml:"OfferDescriptionHTML"`
-			PostActionBehavior    struct {
-				AllowCancel bool `xml:"AllowCancel"`
-				Behavior    bool `xml:"Behavior"`
-				Deadline    bool `xml:"Deadline"`
-				Text        bool `xml:"Text"`
-				Title       bool `xml:"Title"`
-			} `xml:"PostActionBehavior"`
-			PreAction struct {
-				AskToSaveWork    bool `xml:"AskToSaveWork"`
-				DeadlineBehavior bool `xml:"DeadlineBehavior"`
-				ShowActionButton bool `xml:"ShowActionButton"`
-				ShowCancelButton bool `xml:"ShowCancelButton"`
-				ShowConfirmation bool `xml:"ShowConfirmation"`
-				Text             bool `xml:"Text"`
-			} `xml:"PreAction"`
-			PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-			PreActionShowUI        bool `xml:"PreActionShowUI"`
-			Reapply                bool `xml:"Reapply"`
-			ReapplyLimit           bool `xml:"ReapplyLimit"`
-			RetryCount             bool `xml:"RetryCount"`
-			RetryWait              bool `xml:"RetryWait"`
-			RunningMessage         struct {
-				Text bool `xml:"Text"`
-			} `xml:"RunningMessage"`
-			StartDateTimeOffset  bool `xml:"StartDateTimeOffset"`
-			TemporalDistribution bool `xml:"TemporalDistribution"`
-			TimeRange            bool `xml:"TimeRange"`
-			Whose                bool `xml:"Whose"`
-		} `xml:"SettingsLocks"`
-		SuccessCriteria struct {
-			Option   string `xml:"Option,attr"`
-			CharData string `xml:",chardata"`
-		} `xml:"SuccessCriteria"`
-		Target struct {
-			AllComputers    *int    `xml:"AllComputers"`
-			ComputerID      []int   `xml:"ComputerID"`
-			CustomRelevance *string `xml:"CustomRelevance"`
-		} `xml:"Target"`
-		Title string `xml:"Title"`
-	} `xml:"SingleAction"`
-	Task struct {
-		Action []struct {
-			ID           string `xml:"ID,attr"`
-			ActionScript struct {
-				MIMEType string `xml:"MIMEType,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"ActionScript"`
-			Description struct {
-				Link     string `xml:"Link"`
-				PostLink string `xml:"PostLink"`
-				PreLink  string `xml:"PreLink"`
-			} `xml:"Description"`
-			SuccessCriteria *struct {
-				Option   string `xml:"Option,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"SuccessCriteria"`
-		} `xml:"Action"`
-		CVENames      *string `xml:"CVENames"`
-		Category      string  `xml:"Category"`
-		DefaultAction *struct {
-			ID           string `xml:"ID,attr"`
-			ActionScript struct {
-				MIMEType string `xml:"MIMEType,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"ActionScript"`
-			Description struct {
-				Link     string `xml:"Link"`
-				PostLink string `xml:"PostLink"`
-				PreLink  string `xml:"PreLink"`
-			} `xml:"Description"`
-			Settings *struct {
-				ActiveUserRequirement   string `xml:"ActiveUserRequirement"`
-				ActiveUserType          string `xml:"ActiveUserType"`
-				ContinueOnErrors        bool   `xml:"ContinueOnErrors"`
-				HasDayOfWeekConstraint  bool   `xml:"HasDayOfWeekConstraint"`
-				HasEndTime              bool   `xml:"HasEndTime"`
-				HasReapplyInterval      bool   `xml:"HasReapplyInterval"`
-				HasReapplyLimit         bool   `xml:"HasReapplyLimit"`
-				HasRetry                bool   `xml:"HasRetry"`
-				HasRunningMessage       bool   `xml:"HasRunningMessage"`
-				HasStartTime            bool   `xml:"HasStartTime"`
-				HasTemporalDistribution bool   `xml:"HasTemporalDistribution"`
-				HasTimeRange            bool   `xml:"HasTimeRange"`
-				HasWhose                bool   `xml:"HasWhose"`
-				IsOffer                 bool   `xml:"IsOffer"`
-				PostActionBehavior      struct {
-					Behavior string `xml:"Behavior,attr"`
-				} `xml:"PostActionBehavior"`
-				PreActionCacheDownload bool `xml:"PreActionCacheDownload"`
-				PreActionShowUI        bool `xml:"PreActionShowUI"`
-				Reapply                bool `xml:"Reapply"`
-				RetryCount             int  `xml:"RetryCount"`
-				RetryWait              struct {
-					Behavior string `xml:"Behavior,attr"`
-					CharData string `xml:",chardata"`
-				} `xml:"RetryWait"`
-				UseUTCTime bool `xml:"UseUTCTime"`
-			} `xml:"Settings"`
-			SuccessCriteria *struct {
-				Option   string `xml:"Option,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"SuccessCriteria"`
-		} `xml:"DefaultAction"`
-		Delay        *string `xml:"Delay"`
-		Description  string  `xml:"Description"`
-		Domain       *string `xml:"Domain"`
-		DownloadSize *int    `xml:"DownloadSize"`
-		MIMEField    []struct {
-			Name  string `xml:"Name"`
-			Value string `xml:"Value"`
-		} `xml:"MIMEField"`
-		Relevance         []string `xml:"Relevance"`
-		SANSID            *string  `xml:"SANSID"`
-		Source            string   `xml:"Source"`
-		SourceID          string   `xml:"SourceID"`
-		SourceReleaseDate *string  `xml:"SourceReleaseDate"`
-		SourceSeverity    string   `xml:"SourceSeverity"`
-		Title             string   `xml:"Title"`
-	} `xml:"Task"`
+	// SkipUI attribute for the entire BES content
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+
+	// Top-level BES content elements (choice)
+	Fixlet                []BESFixlet                `xml:"Fixlet" json:"fixlet,omitempty"`
+	Task                  []BESTask                  `xml:"Task" json:"task,omitempty"`
+	Analysis              []BESAnalysis              `xml:"Analysis" json:"analysis,omitempty"`
+	SingleAction          []BESSingleAction          `xml:"SingleAction" json:"singleAction,omitempty"`
+	SourcedFixletAction   []BESSourcedFixletAction   `xml:"SourcedFixletAction" json:"sourcedFixletAction,omitempty"`
+	MultipleActionGroup   []BESMultipleActionGroup   `xml:"MultipleActionGroup" json:"multipleActionGroup,omitempty"`
+	Baseline              []BESBaseline              `xml:"Baseline" json:"baseline,omitempty"`
+	ComputerGroup         []BESComputerGroup         `xml:"ComputerGroup" json:"computerGroup,omitempty"`
+	CustomSite            []BESCustomSite            `xml:"CustomSite" json:"customSite,omitempty"`
+	ActionSite            []BESActionSite            `xml:"ActionSite" json:"actionSite,omitempty"`
+	ExternalSite          []BESExternalSite          `xml:"ExternalSite" json:"externalSite,omitempty"`
+	OperatorSite          []BESOperatorSite          `xml:"OperatorSite" json:"operatorSite,omitempty"`
+	Property              []BESProperty              `xml:"Property" json:"property,omitempty"`
+}
+
+// BESFixlet represents a fixlet with actions
+type BESFixlet struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	// Fixlet base elements
+	Title             string               `xml:"Title" json:"title"`
+	Description       string               `xml:"Description" json:"description"`
+	Relevance         []string             `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	GroupRelevance    *BESGroupRelevance   `xml:"GroupRelevance,omitempty" json:"groupRelevance,omitempty"`
+	Category          string               `xml:"Category,omitempty" json:"category,omitempty"`
+	WizardData        *BESWizardData       `xml:"WizardData,omitempty" json:"wizardData,omitempty"`
+	DownloadSize      int                  `xml:"DownloadSize,omitempty" json:"downloadSize,omitempty"`
+	Source            string               `xml:"Source,omitempty" json:"source,omitempty"`
+	SourceID          string               `xml:"SourceID,omitempty" json:"sourceId,omitempty"`
+	SourceReleaseDate string               `xml:"SourceReleaseDate,omitempty" json:"sourceReleaseDate,omitempty"`
+	SourceSeverity    string               `xml:"SourceSeverity,omitempty" json:"sourceSeverity,omitempty"`
+	CVENames          string               `xml:"CVENames,omitempty" json:"cveNames,omitempty"`
+	SANSID            string               `xml:"SANSID,omitempty" json:"sansId,omitempty"`
+	MIMEField         []BESMIMEField       `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	Domain            string               `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Delay             string               `xml:"Delay,omitempty" json:"delay,omitempty"`
+	
+	// Actions
+	DefaultAction     *BESFixletAction     `xml:"DefaultAction,omitempty" json:"defaultAction,omitempty"`
+	Action            []BESFixletAction    `xml:"Action,omitempty" json:"action,omitempty"`
+}
+
+// BESTask represents a task with actions  
+type BESTask struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	// Task base elements (same as Fixlet)
+	Title             string               `xml:"Title" json:"title"`
+	Description       string               `xml:"Description" json:"description"`
+	Relevance         []string             `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	GroupRelevance    *BESGroupRelevance   `xml:"GroupRelevance,omitempty" json:"groupRelevance,omitempty"`
+	Category          string               `xml:"Category,omitempty" json:"category,omitempty"`
+	WizardData        *BESWizardData       `xml:"WizardData,omitempty" json:"wizardData,omitempty"`
+	DownloadSize      int                  `xml:"DownloadSize,omitempty" json:"downloadSize,omitempty"`
+	Source            string               `xml:"Source,omitempty" json:"source,omitempty"`
+	SourceID          string               `xml:"SourceID,omitempty" json:"sourceId,omitempty"`
+	SourceReleaseDate string               `xml:"SourceReleaseDate,omitempty" json:"sourceReleaseDate,omitempty"`
+	SourceSeverity    string               `xml:"SourceSeverity,omitempty" json:"sourceSeverity,omitempty"`
+	CVENames          string               `xml:"CVENames,omitempty" json:"cveNames,omitempty"`
+	SANSID            string               `xml:"SANSID,omitempty" json:"sansId,omitempty"`
+	MIMEField         []BESMIMEField       `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	Domain            string               `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Delay             string               `xml:"Delay,omitempty" json:"delay,omitempty"`
+	
+	// Actions
+	DefaultAction     *BESFixletAction     `xml:"DefaultAction,omitempty" json:"defaultAction,omitempty"`
+	Action            []BESFixletAction    `xml:"Action,omitempty" json:"action,omitempty"`
+}
+
+// BESAnalysis represents an analysis object
+type BESAnalysis struct {
+	AutoActivate bool `xml:"AutoActivate,attr" json:"autoActivate,omitempty"`
+	SkipUI       bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	// Analysis base elements
+	Title             string               `xml:"Title" json:"title"`
+	Description       string               `xml:"Description" json:"description"`
+	Relevance         []string             `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	GroupRelevance    *BESGroupRelevance   `xml:"GroupRelevance,omitempty" json:"groupRelevance,omitempty"`
+	Category          string               `xml:"Category,omitempty" json:"category,omitempty"`
+	WizardData        *BESWizardData       `xml:"WizardData,omitempty" json:"wizardData,omitempty"`
+	DownloadSize      int                  `xml:"DownloadSize,omitempty" json:"downloadSize,omitempty"`
+	Source            string               `xml:"Source,omitempty" json:"source,omitempty"`
+	SourceID          string               `xml:"SourceID,omitempty" json:"sourceId,omitempty"`
+	SourceReleaseDate string               `xml:"SourceReleaseDate,omitempty" json:"sourceReleaseDate,omitempty"`
+	SourceSeverity    string               `xml:"SourceSeverity,omitempty" json:"sourceSeverity,omitempty"`
+	CVENames          string               `xml:"CVENames,omitempty" json:"cveNames,omitempty"`
+	SANSID            string               `xml:"SANSID,omitempty" json:"sansId,omitempty"`
+	MIMEField         []BESMIMEField       `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	Domain            string               `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Delay             string               `xml:"Delay,omitempty" json:"delay,omitempty"`
+	
+	// Analysis-specific properties
+	Property          []BESAnalysisProperty `xml:"Property,omitempty" json:"property,omitempty"`
+}
+
+// BESBaseline represents a baseline object
+type BESBaseline struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	// Baseline base elements (extends Fixlet)
+	Title             string                         `xml:"Title" json:"title"`
+	Description       string                         `xml:"Description" json:"description"`
+	Relevance         []string                       `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	GroupRelevance    *BESGroupRelevance             `xml:"GroupRelevance,omitempty" json:"groupRelevance,omitempty"`
+	Category          string                         `xml:"Category,omitempty" json:"category,omitempty"`
+	WizardData        *BESWizardData                 `xml:"WizardData,omitempty" json:"wizardData,omitempty"`
+	DownloadSize      int                            `xml:"DownloadSize,omitempty" json:"downloadSize,omitempty"`
+	Source            string                         `xml:"Source,omitempty" json:"source,omitempty"`
+	SourceID          string                         `xml:"SourceID,omitempty" json:"sourceId,omitempty"`
+	SourceReleaseDate string                         `xml:"SourceReleaseDate,omitempty" json:"sourceReleaseDate,omitempty"`
+	SourceSeverity    string                         `xml:"SourceSeverity,omitempty" json:"sourceSeverity,omitempty"`
+	CVENames          string                         `xml:"CVENames,omitempty" json:"cveNames,omitempty"`
+	SANSID            string                         `xml:"SANSID,omitempty" json:"sansId,omitempty"`
+	MIMEField         []BESMIMEField                 `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	Domain            string                         `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Delay             string                         `xml:"Delay,omitempty" json:"delay,omitempty"`
+	
+	// Baseline-specific elements
+	BaselineComponentCollection BESBaselineComponentCollection `xml:"BaselineComponentCollection" json:"baselineComponentCollection"`
+	Settings                    *BESActionSettings             `xml:"Settings,omitempty" json:"settings,omitempty"`
+	SettingsLocks               *BESActionSettingsLocks        `xml:"SettingsLocks,omitempty" json:"settingsLocks,omitempty"`
+}
+
+// BESComputerGroup represents a computer group
+type BESComputerGroup struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Title              string                        `xml:"Title" json:"title"`
+	Domain             string                        `xml:"Domain,omitempty" json:"domain,omitempty"`
+	JoinByIntersection bool                          `xml:"JoinByIntersection" json:"joinByIntersection"`
+	IsDynamic          bool                          `xml:"IsDynamic,omitempty" json:"isDynamic,omitempty"`
+	EvaluateOnClient   bool                          `xml:"EvaluateOnClient,omitempty" json:"evaluateOnClient,omitempty"`
+	
+	// Computer group components (repeating group)
+	ComputerGroupComponents []BESComputerGroupComponent `xml:",any" json:"computerGroupComponents,omitempty"`
+}
+
+// BESCustomSite represents a custom site  
+type BESCustomSite struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Name                 string              `xml:"Name" json:"name"`
+	DisplayName          string              `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL            string              `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+	Description          string              `xml:"Description,omitempty" json:"description,omitempty"`
+	Domain               string              `xml:"Domain,omitempty" json:"domain,omitempty"`
+	GlobalReadPermission bool                `xml:"GlobalReadPermission,omitempty" json:"globalReadPermission,omitempty"`
+	Subscription         *BESSubscription    `xml:"Subscription,omitempty" json:"subscription,omitempty"`
+}
+
+// BESActionSite represents an action site
+type BESActionSite struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Name                 string              `xml:"Name" json:"name"`
+	DisplayName          string              `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL            string              `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+	Description          string              `xml:"Description,omitempty" json:"description,omitempty"`
+	Domain               string              `xml:"Domain,omitempty" json:"domain,omitempty"`
+	GlobalReadPermission bool                `xml:"GlobalReadPermission,omitempty" json:"globalReadPermission,omitempty"`
+	Subscription         *BESSubscription    `xml:"Subscription,omitempty" json:"subscription,omitempty"`
+}
+
+// BESExternalSite represents an external site
+type BESExternalSite struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Name                 string              `xml:"Name" json:"name"`
+	DisplayName          string              `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL            string              `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+	Description          string              `xml:"Description,omitempty" json:"description,omitempty"`
+	Domain               string              `xml:"Domain,omitempty" json:"domain,omitempty"`
+	GlobalReadPermission bool                `xml:"GlobalReadPermission,omitempty" json:"globalReadPermission,omitempty"`
+	Subscription         *BESSubscription    `xml:"Subscription,omitempty" json:"subscription,omitempty"`
+	
+	// External site specific
+	Masthead             string              `xml:"Masthead,omitempty" json:"masthead,omitempty"`
+}
+
+// BESOperatorSite represents an operator site
+type BESOperatorSite struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Name        string `xml:"Name" json:"name"`
+	DisplayName string `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL   string `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+}
+
+// BESProperty represents a BES property
+type BESProperty struct {
+	SkipUI           bool   `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	Name             string `xml:"Name,attr" json:"name"`
+	EvaluationPeriod string `xml:"EvaluationPeriod,attr,omitempty" json:"evaluationPeriod,omitempty"`
+	KeepStatistics   bool   `xml:"KeepStatistics,attr,omitempty" json:"keepStatistics,omitempty"`
+	Relevance        string `xml:",chardata" json:"relevance"`
+}
+
+// BESMultipleActionGroup represents a multiple action group
+type BESMultipleActionGroup struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Title                   string                         `xml:"Title,omitempty" json:"title,omitempty"`
+	Relevance              string                         `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	PreGroupActionScript   *BESActionScript               `xml:"PreGroupActionScript,omitempty" json:"preGroupActionScript,omitempty"`
+	MemberAction           []BESMemberAction              `xml:"MemberAction,omitempty" json:"memberAction,omitempty"`
+	SourcedMemberAction    []BESSourcedMemberAction       `xml:"SourcedMemberAction,omitempty" json:"sourcedMemberAction,omitempty"`
+	PostGroupActionScript  *BESActionScript               `xml:"PostGroupActionScript,omitempty" json:"postGroupActionScript,omitempty"`
+	Settings               *BESActionSettings             `xml:"Settings,omitempty" json:"settings,omitempty"`
+	SettingsLocks          *BESActionSettingsLocks        `xml:"SettingsLocks,omitempty" json:"settingsLocks,omitempty"`
+	SkipLockedConstraint   bool                           `xml:"SkipLockedConstraint,omitempty" json:"skipLockedConstraint,omitempty"`
+	Domain                 string                         `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Target                 *BESActionTarget               `xml:"Target,omitempty" json:"target,omitempty"`
+	SourceFixletID         *BESActionSourceFixlet         `xml:"SourceFixletID,omitempty" json:"sourceFixletId,omitempty"`
+	MIMEField              []BESMIMEField                 `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+}
+
+// BESSourcedFixletAction represents a sourced fixlet action
+type BESSourcedFixletAction struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	SourceFixlet     BESActionSourceFixlet `xml:"SourceFixlet" json:"sourceFixlet"`
+	Target           *BESActionTarget      `xml:"Target,omitempty" json:"target,omitempty"`
+	Parameter        []BESActionParameter  `xml:"Parameter,omitempty" json:"parameter,omitempty"`
+	SecureParameter  []BESActionParameter  `xml:"SecureParameter,omitempty" json:"secureParameter,omitempty"`
+	Settings         *BESActionSettings    `xml:"Settings,omitempty" json:"settings,omitempty"`
+	IsUrgent         bool                  `xml:"IsUrgent,omitempty" json:"isUrgent,omitempty"`
+	Title            string                `xml:"Title,omitempty" json:"title,omitempty"`
+}
+
+// BESSingleAction represents a single action
+type BESSingleAction struct {
+	SkipUI bool `xml:"SkipUI,attr" json:"skipUI,omitempty"`
+	
+	Title                string                  `xml:"Title" json:"title"`
+	Relevance           string                  `xml:"Relevance" json:"relevance"`
+	ActionScript        BESActionScript         `xml:"ActionScript" json:"actionScript"`
+	SuccessCriteria     *BESActionSuccessCriteria `xml:"SuccessCriteria,omitempty" json:"successCriteria,omitempty"`
+	SuccessCriteriaLocked bool                  `xml:"SuccessCriteriaLocked,omitempty" json:"successCriteriaLocked,omitempty"`
+	Parameter           []BESActionParameter    `xml:"Parameter,omitempty" json:"parameter,omitempty"`
+	SecureParameter     []BESActionParameter    `xml:"SecureParameter,omitempty" json:"secureParameter,omitempty"`
+	MIMEField           []BESMIMEField          `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	Settings            *BESActionSettings      `xml:"Settings,omitempty" json:"settings,omitempty"`
+	SettingsLocks       *BESActionSettingsLocks `xml:"SettingsLocks,omitempty" json:"settingsLocks,omitempty"`
+	IsUrgent            bool                    `xml:"IsUrgent,omitempty" json:"isUrgent,omitempty"`
+	SkipLockedConstraint bool                   `xml:"SkipLockedConstraint,omitempty" json:"skipLockedConstraint,omitempty"`
+	Domain              string                  `xml:"Domain,omitempty" json:"domain,omitempty"`
+	Target              *BESActionTarget        `xml:"Target,omitempty" json:"target,omitempty"`
+	SourceFixlet        *BESActionSourceFixlet  `xml:"SourceFixlet,omitempty" json:"sourceFixlet,omitempty"`
+	MIMEFieldSingleAction []BESMIMEField        `xml:"MIMEFieldSingleAction,omitempty" json:"mimeFieldSingleAction,omitempty"`
+}
+
+// Supporting structs for BES types
+
+// BESMIMEField represents a MIME field
+type BESMIMEField struct {
+	Name  string `xml:"Name" json:"name"`
+	Value string `xml:"Value" json:"value"`
+}
+
+// BESGroupRelevance represents group relevance for targeting
+type BESGroupRelevance struct {
+	JoinByIntersection bool                           `xml:"JoinByIntersection,attr" json:"joinByIntersection"`
+	ComputerGroupComponents []BESComputerGroupComponent `xml:",any" json:"computerGroupComponents"`
+}
+
+// BESWizardData represents wizard data configuration
+type BESWizardData struct {
+	Name      string `xml:"Name,omitempty" json:"name,omitempty"`
+	DataStore string `xml:"DataStore,omitempty" json:"dataStore,omitempty"`
+	StartURL  string `xml:"StartURL,omitempty" json:"startUrl,omitempty"`
+	SkipUI    string `xml:"SkipUI,omitempty" json:"skipUI,omitempty"`
+}
+
+// BESAnalysisProperty represents a property in an analysis
+type BESAnalysisProperty struct {
+	ID               int    `xml:"ID,attr" json:"id"`
+	Name             string `xml:"Name,attr" json:"name"`
+	EvaluationPeriod string `xml:"EvaluationPeriod,attr,omitempty" json:"evaluationPeriod,omitempty"`
+	KeepStatistics   bool   `xml:"KeepStatistics,attr,omitempty" json:"keepStatistics,omitempty"`
+	Relevance        string `xml:",chardata" json:"relevance"`
+}
+
+// BESFixletAction represents an action within a fixlet or task
+type BESFixletAction struct {
+	ID                    string                    `xml:"ID,attr" json:"id"`
+	Description           *BESActionDescription     `xml:"Description,omitempty" json:"description,omitempty"`
+	ActionScript          BESActionScript           `xml:"ActionScript" json:"actionScript"`
+	SuccessCriteria       *BESActionSuccessCriteria `xml:"SuccessCriteria,omitempty" json:"successCriteria,omitempty"`
+	SuccessCriteriaLocked bool                      `xml:"SuccessCriteriaLocked,omitempty" json:"successCriteriaLocked,omitempty"`
+	Settings              *BESActionSettings        `xml:"Settings,omitempty" json:"settings,omitempty"`
+	SettingsLocks         *BESActionSettingsLocks   `xml:"SettingsLocks,omitempty" json:"settingsLocks,omitempty"`
+}
+
+// BESActionDescription represents action description with links
+type BESActionDescription struct {
+	PreLink  string `xml:"PreLink" json:"preLink"`
+	Link     string `xml:"Link" json:"link"`
+	PostLink string `xml:"PostLink" json:"postLink"`
+}
+
+// BESActionScript represents an action script
+type BESActionScript struct {
+	MIMEType string `xml:"MIMEType,attr" json:"mimeType,omitempty"`
+	Script   string `xml:",chardata" json:"script"`
+}
+
+// BESActionSuccessCriteria represents success criteria for actions
+type BESActionSuccessCriteria struct {
+	Option    string `xml:"Option,attr,omitempty" json:"option,omitempty"`
+	Relevance string `xml:",chardata" json:"relevance"`
+}
+
+// BESBaselineComponentCollection represents the collection of baseline components
+type BESBaselineComponentCollection struct {
+	BaselineComponentGroup []BESBaselineComponentGroup `xml:"BaselineComponentGroup,omitempty" json:"baselineComponentGroup,omitempty"`
+}
+
+// BESBaselineComponentGroup represents a group of baseline components
+type BESBaselineComponentGroup struct {
+	Name              string                   `xml:"Name,attr,omitempty" json:"name,omitempty"`
+	BaselineComponent []BESBaselineComponent   `xml:"BaselineComponent,omitempty" json:"baselineComponent,omitempty"`
+}
+
+// BESBaselineComponent represents a single baseline component
+type BESBaselineComponent struct {
+	Name               string                    `xml:"Name,attr,omitempty" json:"name,omitempty"`
+	ActionName         string                    `xml:"ActionName,attr,omitempty" json:"actionName,omitempty"`
+	IncludeInRelevance bool                      `xml:"IncludeInRelevance,attr,omitempty" json:"includeInRelevance,omitempty"`
+	SourceSiteURL      string                    `xml:"SourceSiteURL,attr,omitempty" json:"sourceSiteUrl,omitempty"`
+	SourceID           int                       `xml:"SourceID,attr,omitempty" json:"sourceId,omitempty"`
+	SyncStatus         string                    `xml:"SyncStatus,attr,omitempty" json:"syncStatus,omitempty"`
+	Relevance          string                    `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+	Delay              string                    `xml:"Delay,omitempty" json:"delay,omitempty"`
+	ActionScript       *BESActionScript          `xml:"ActionScript,omitempty" json:"actionScript,omitempty"`
+	SuccessCriteria    *BESActionSuccessCriteria `xml:"SuccessCriteria,omitempty" json:"successCriteria,omitempty"`
+}
+
+// BESComputerGroupComponent represents components that can be used in computer groups
+type BESComputerGroupComponent struct {
+	SearchComponentRelevance         *BESSearchComponentRelevance         `xml:"SearchComponentRelevance,omitempty" json:"searchComponentRelevance,omitempty"`
+	SearchComponentPropertyReference *BESSearchComponentPropertyReference `xml:"SearchComponentPropertyReference,omitempty" json:"searchComponentPropertyReference,omitempty"`
+	SearchComponentGroupReference    *BESSearchComponentGroupReference    `xml:"SearchComponentGroupReference,omitempty" json:"searchComponentGroupReference,omitempty"`
+}
+
+// BESSearchComponentRelevance represents relevance-based search component
+type BESSearchComponentRelevance struct {
+	Comparison string `xml:"Comparison,attr" json:"comparison"`
+	Relevance  string `xml:"Relevance" json:"relevance"`
+}
+
+// BESSearchComponentPropertyReference represents property-based search component
+type BESSearchComponentPropertyReference struct {
+	PropertyName string `xml:"PropertyName,attr" json:"propertyName"`
+	Comparison   string `xml:"Comparison,attr" json:"comparison"`
+	SearchText   string `xml:"SearchText" json:"searchText"`
+	Relevance    string `xml:"Relevance" json:"relevance"`
+}
+
+// BESSearchComponentGroupReference represents group-based search component
+type BESSearchComponentGroupReference struct {
+	GroupName  string `xml:"GroupName,attr" json:"groupName"`
+	Comparison string `xml:"Comparison,attr" json:"comparison"`
+}
+
+// BESSubscription represents site subscription settings
+type BESSubscription struct {
+	Mode        string             `xml:"Mode" json:"mode"`
+	CustomGroup *BESCustomGroup    `xml:"CustomGroup,omitempty" json:"customGroup,omitempty"`
+}
+
+// BESCustomGroup represents custom group settings for subscriptions
+type BESCustomGroup struct {
+	JoinByIntersection      bool                             `xml:"JoinByIntersection,attr" json:"joinByIntersection"`
+	ComputerGroupComponents []BESComputerGroupComponent      `xml:",any" json:"computerGroupComponents"`
+}
+
+// BESMemberAction represents a member action in a multiple action group
+type BESMemberAction struct {
+	Title                   string                    `xml:"Title" json:"title"`
+	Relevance               string                    `xml:"Relevance" json:"relevance"`
+	ActionScript            BESActionScript           `xml:"ActionScript" json:"actionScript"`
+	SuccessCriteria         *BESActionSuccessCriteria `xml:"SuccessCriteria,omitempty" json:"successCriteria,omitempty"`
+	SuccessCriteriaLocked   bool                      `xml:"SuccessCriteriaLocked,omitempty" json:"successCriteriaLocked,omitempty"`
+	Parameter               []BESActionParameter      `xml:"Parameter,omitempty" json:"parameter,omitempty"`
+	SecureParameter         []BESActionParameter      `xml:"SecureParameter,omitempty" json:"secureParameter,omitempty"`
+	MIMEField               []BESMIMEField            `xml:"MIMEField,omitempty" json:"mimeField,omitempty"`
+	IncludeInGroupRelevance bool                      `xml:"IncludeInGroupRelevance,omitempty" json:"includeInGroupRelevance,omitempty"`
+}
+
+// BESSourcedMemberAction represents a sourced member action
+type BESSourcedMemberAction struct {
+	SourceFixlet            BESActionSourceFixlet `xml:"SourceFixlet" json:"sourceFixlet"`
+	Target                  *BESActionTarget      `xml:"Target,omitempty" json:"target,omitempty"`
+	Parameter               []BESActionParameter  `xml:"Parameter,omitempty" json:"parameter,omitempty"`
+	SecureParameter         []BESActionParameter  `xml:"SecureParameter,omitempty" json:"secureParameter,omitempty"`
+	Settings                *BESActionSettings    `xml:"Settings,omitempty" json:"settings,omitempty"`
+	IsUrgent                bool                  `xml:"IsUrgent,omitempty" json:"isUrgent,omitempty"`
+	Title                   string                `xml:"Title,omitempty" json:"title,omitempty"`
+	IncludeInGroupRelevance bool                  `xml:"IncludeInGroupRelevance,omitempty" json:"includeInGroupRelevance,omitempty"`
+}
+
+// BESActionTarget represents action targeting options
+type BESActionTarget struct {
+	ComputerName    []string `xml:"ComputerName,omitempty" json:"computerName,omitempty"`
+	ComputerID      []int    `xml:"ComputerID,omitempty" json:"computerId,omitempty"`
+	CustomRelevance string   `xml:"CustomRelevance,omitempty" json:"customRelevance,omitempty"`
+	AllComputers    bool     `xml:"AllComputers,omitempty" json:"allComputers,omitempty"`
+}
+
+// BESActionSourceFixlet represents the source fixlet for an action
+type BESActionSourceFixlet struct {
+	GatherURL string `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+	Sitename  string `xml:"Sitename,omitempty" json:"siteName,omitempty"`
+	SiteID    int    `xml:"SiteID,omitempty" json:"siteId,omitempty"`
+	FixletID  int    `xml:"FixletID" json:"fixletId"`
+	Action    string `xml:"Action,omitempty" json:"action,omitempty"`
+}
+
+// BESActionParameter represents an action parameter
+type BESActionParameter struct {
+	Name  string `xml:"Name,attr" json:"name"`
+	Value string `xml:",chardata" json:"value"`
+}
+
+// BESActionSettings represents action settings (comprehensive structure based on XSD)
+type BESActionSettings struct {
+	// Pre-7.0 options
+	HasMessage *bool            `xml:"HasMessage,omitempty" json:"hasMessage,omitempty"`
+	Message    *BESMessage      `xml:"Message,omitempty" json:"message,omitempty"`
+	
+	// UI and Pre-action settings
+	ActionUITitle         string                `xml:"ActionUITitle,omitempty" json:"actionUITitle,omitempty"`
+	PreActionShowUI       bool                  `xml:"PreActionShowUI,omitempty" json:"preActionShowUI,omitempty"`
+	PreAction             *BESPreAction         `xml:"PreAction,omitempty" json:"preAction,omitempty"`
+	
+	// Running message
+	HasRunningMessage     bool                  `xml:"HasRunningMessage,omitempty" json:"hasRunningMessage,omitempty"`
+	RunningMessage        *BESRunningMessage    `xml:"RunningMessage,omitempty" json:"runningMessage,omitempty"`
+	
+	// Time constraints
+	HasTimeRange          bool                  `xml:"HasTimeRange,omitempty" json:"hasTimeRange,omitempty"`
+	TimeRange             *BESTimeRange         `xml:"TimeRange,omitempty" json:"timeRange,omitempty"`
+	HasStartTime          bool                  `xml:"HasStartTime,omitempty" json:"hasStartTime,omitempty"`
+	StartDateTimeOffset   string                `xml:"StartDateTimeOffset,omitempty" json:"startDateTimeOffset,omitempty"`
+	StartDateTimeLocalOffset string             `xml:"StartDateTimeLocalOffset,omitempty" json:"startDateTimeLocalOffset,omitempty"`
+	StartDateTime         string                `xml:"StartDateTime,omitempty" json:"startDateTime,omitempty"`
+	StartDateTimeLocal    string                `xml:"StartDateTimeLocal,omitempty" json:"startDateTimeLocal,omitempty"`
+	HasEndTime            bool                  `xml:"HasEndTime,omitempty" json:"hasEndTime,omitempty"`
+	EndDateTimeOffset     string                `xml:"EndDateTimeOffset,omitempty" json:"endDateTimeOffset,omitempty"`
+	EndDateTimeLocalOffset string               `xml:"EndDateTimeLocalOffset,omitempty" json:"endDateTimeLocalOffset,omitempty"`
+	EndDateTime           string                `xml:"EndDateTime,omitempty" json:"endDateTime,omitempty"`
+	EndDateTimeLocal      string                `xml:"EndDateTimeLocal,omitempty" json:"endDateTimeLocal,omitempty"`
+	HasDayOfWeekConstraint bool                 `xml:"HasDayOfWeekConstraint,omitempty" json:"hasDayOfWeekConstraint,omitempty"`
+	DayOfWeekConstraint   *BESDayOfWeekConstraint `xml:"DayOfWeekConstraint,omitempty" json:"dayOfWeekConstraint,omitempty"`
+	UseUTCTime            bool                  `xml:"UseUTCTime,omitempty" json:"useUTCTime,omitempty"`
+	
+	// User requirements
+	ActiveUserRequirement string                `xml:"ActiveUserRequirement,omitempty" json:"activeUserRequirement,omitempty"`
+	ActiveUserType        string                `xml:"ActiveUserType,omitempty" json:"activeUserType,omitempty"`
+	UIGroupConstraints    *BESUIGroupConstraints `xml:"UIGroupConstraints,omitempty" json:"uiGroupConstraints,omitempty"`
+	HasWhose              bool                  `xml:"HasWhose,omitempty" json:"hasWhose,omitempty"`
+	Whose                 *BESWhose             `xml:"Whose,omitempty" json:"whose,omitempty"`
+	
+	// Execution settings
+	PreActionCacheDownload bool                 `xml:"PreActionCacheDownload,omitempty" json:"preActionCacheDownload,omitempty"`
+	Reapply               bool                  `xml:"Reapply,omitempty" json:"reapply,omitempty"`
+	HasReapplyLimit       bool                  `xml:"HasReapplyLimit,omitempty" json:"hasReapplyLimit,omitempty"`
+	ReapplyLimit          int                   `xml:"ReapplyLimit,omitempty" json:"reapplyLimit,omitempty"`
+	HasReapplyInterval    bool                  `xml:"HasReapplyInterval,omitempty" json:"hasReapplyInterval,omitempty"`
+	ReapplyInterval       string                `xml:"ReapplyInterval,omitempty" json:"reapplyInterval,omitempty"`
+	HasRetry              bool                  `xml:"HasRetry,omitempty" json:"hasRetry,omitempty"`
+	RetryCount            int                   `xml:"RetryCount,omitempty" json:"retryCount,omitempty"`
+	RetryWait             *BESRetryWait         `xml:"RetryWait,omitempty" json:"retryWait,omitempty"`
+	HasTemporalDistribution bool                `xml:"HasTemporalDistribution,omitempty" json:"hasTemporalDistribution,omitempty"`
+	TemporalDistribution  string                `xml:"TemporalDistribution,omitempty" json:"temporalDistribution,omitempty"`
+	ContinueOnErrors      bool                  `xml:"ContinueOnErrors,omitempty" json:"continueOnErrors,omitempty"`
+	PostActionBehavior    *BESPostActionBehavior `xml:"PostActionBehavior,omitempty" json:"postActionBehavior,omitempty"`
+	
+	// Offers
+	IsOffer               bool                  `xml:"IsOffer,omitempty" json:"isOffer,omitempty"`
+	AnnounceOffer         bool                  `xml:"AnnounceOffer,omitempty" json:"announceOffer,omitempty"`
+	OfferCategory         string                `xml:"OfferCategory,omitempty" json:"offerCategory,omitempty"`
+	OfferDescriptionHTML  string                `xml:"OfferDescriptionHTML,omitempty" json:"offerDescriptionHtml,omitempty"`
+}
+
+// BESActionSettingsLocks represents locks on action settings
+type BESActionSettingsLocks struct {
+	HasMessage               bool                      `xml:"HasMessage,omitempty" json:"hasMessage,omitempty"`
+	Message                  *BESMessageLocks          `xml:"Message,omitempty" json:"message,omitempty"`
+	ActionUITitle            bool                      `xml:"ActionUITitle,omitempty" json:"actionUITitle,omitempty"`
+	PreActionShowUI          bool                      `xml:"PreActionShowUI,omitempty" json:"preActionShowUI,omitempty"`
+	PreAction                *BESPreActionLocks        `xml:"PreAction,omitempty" json:"preAction,omitempty"`
+	HasRunningMessage        bool                      `xml:"HasRunningMessage,omitempty" json:"hasRunningMessage,omitempty"`
+	RunningMessage           *BESRunningMessageLocks   `xml:"RunningMessage,omitempty" json:"runningMessage,omitempty"`
+	TimeRange                bool                      `xml:"TimeRange,omitempty" json:"timeRange,omitempty"`
+	StartDateTimeOffset      bool                      `xml:"StartDateTimeOffset,omitempty" json:"startDateTimeOffset,omitempty"`
+	EndDateTimeOffset        bool                      `xml:"EndDateTimeOffset,omitempty" json:"endDateTimeOffset,omitempty"`
+	DayOfWeekConstraint      bool                      `xml:"DayOfWeekConstraint,omitempty" json:"dayOfWeekConstraint,omitempty"`
+	ActiveUserRequirement    bool                      `xml:"ActiveUserRequirement,omitempty" json:"activeUserRequirement,omitempty"`
+	ActiveUserType           bool                      `xml:"ActiveUserType,omitempty" json:"activeUserType,omitempty"`
+	Whose                    bool                      `xml:"Whose,omitempty" json:"whose,omitempty"`
+	PreActionCacheDownload   bool                      `xml:"PreActionCacheDownload,omitempty" json:"preActionCacheDownload,omitempty"`
+	Reapply                  bool                      `xml:"Reapply,omitempty" json:"reapply,omitempty"`
+	ReapplyLimit             bool                      `xml:"ReapplyLimit,omitempty" json:"reapplyLimit,omitempty"`
+	ReapplyInterval          bool                      `xml:"ReapplyInterval,omitempty" json:"reapplyInterval,omitempty"`
+	RetryCount               bool                      `xml:"RetryCount,omitempty" json:"retryCount,omitempty"`
+	RetryWait                bool                      `xml:"RetryWait,omitempty" json:"retryWait,omitempty"`
+	TemporalDistribution     bool                      `xml:"TemporalDistribution,omitempty" json:"temporalDistribution,omitempty"`
+	ContinueOnErrors         bool                      `xml:"ContinueOnErrors,omitempty" json:"continueOnErrors,omitempty"`
+	PostActionBehavior       *BESPostActionBehaviorLocks `xml:"PostActionBehavior,omitempty" json:"postActionBehavior,omitempty"`
+	IsOffer                  bool                      `xml:"IsOffer,omitempty" json:"isOffer,omitempty"`
+	AnnounceOffer            bool                      `xml:"AnnounceOffer,omitempty" json:"announceOffer,omitempty"`
+	OfferTitle               string                    `xml:"OfferTitle,omitempty" json:"offerTitle,omitempty"`
+	OfferCategory            string                    `xml:"OfferCategory,omitempty" json:"offerCategory,omitempty"`
+	OfferDescriptionHTML     string                    `xml:"OfferDescriptionHTML,omitempty" json:"offerDescriptionHtml,omitempty"`
+}
+
+// Supporting structs for action settings
+
+// BESMessage represents a message displayed during action execution
+type BESMessage struct {
+	Title                       string `xml:"Title,omitempty" json:"title,omitempty"`
+	Text                        string `xml:"Text,omitempty" json:"text,omitempty"`
+	ShowActionButton            bool   `xml:"ShowActionButton,omitempty" json:"showActionButton,omitempty"`
+	ShowCancelButton            bool   `xml:"ShowCancelButton,omitempty" json:"showCancelButton,omitempty"`
+	AllowPostponement           bool   `xml:"AllowPostponement,omitempty" json:"allowPostponement,omitempty"`
+	MaxPostponementInterval     string `xml:"MaxPostponementInterval,omitempty" json:"maxPostponementInterval,omitempty"`
+	PostponementDeadlineOffset  string `xml:"PostponementDeadlineOffset,omitempty" json:"postponementDeadlineOffset,omitempty"`
+	HasTimeout                  bool   `xml:"HasTimeout,omitempty" json:"hasTimeout,omitempty"`
+	TimeoutInterval             string `xml:"TimeoutInterval,omitempty" json:"timeoutInterval,omitempty"`
+}
+
+// BESPreAction represents pre-action settings
+type BESPreAction struct {
+	Text                    string `xml:"Text,omitempty" json:"text,omitempty"`
+	AskToSaveWork           bool   `xml:"AskToSaveWork,omitempty" json:"askToSaveWork,omitempty"`
+	ShowActionButton        bool   `xml:"ShowActionButton,omitempty" json:"showActionButton,omitempty"`
+	ShowCancelButton        bool   `xml:"ShowCancelButton,omitempty" json:"showCancelButton,omitempty"`
+	DeadlineBehavior        string `xml:"DeadlineBehavior,omitempty" json:"deadlineBehavior,omitempty"`
+	DeadlineType            string `xml:"DeadlineType,omitempty" json:"deadlineType,omitempty"`
+	DeadlineInterval        string `xml:"DeadlineInterval,omitempty" json:"deadlineInterval,omitempty"`
+	DeadlineOffset          string `xml:"DeadlineOffset,omitempty" json:"deadlineOffset,omitempty"`
+	DeadlineLocalOffset     string `xml:"DeadlineLocalOffset,omitempty" json:"deadlineLocalOffset,omitempty"`
+	ShowConfirmation        bool   `xml:"ShowConfirmation,omitempty" json:"showConfirmation,omitempty"`
+	Confirmation            string `xml:"Confirmation,omitempty" json:"confirmation,omitempty"`
+}
+
+// BESRunningMessage represents a running message
+type BESRunningMessage struct {
+	Title string `xml:"Title,omitempty" json:"title,omitempty"`
+	Text  string `xml:"Text,omitempty" json:"text,omitempty"`
+}
+
+// BESTimeRange represents time range constraints
+type BESTimeRange struct {
+	StartTime string `xml:"StartTime,omitempty" json:"startTime,omitempty"`
+	EndTime   string `xml:"EndTime,omitempty" json:"endTime,omitempty"`
+}
+
+// BESDayOfWeekConstraint represents day of week constraints
+type BESDayOfWeekConstraint struct {
+	Sun bool `xml:"Sun,omitempty" json:"sun,omitempty"`
+	Mon bool `xml:"Mon,omitempty" json:"mon,omitempty"`
+	Tue bool `xml:"Tue,omitempty" json:"tue,omitempty"`
+	Wed bool `xml:"Wed,omitempty" json:"wed,omitempty"`
+	Thu bool `xml:"Thu,omitempty" json:"thu,omitempty"`
+	Fri bool `xml:"Fri,omitempty" json:"fri,omitempty"`
+	Sat bool `xml:"Sat,omitempty" json:"sat,omitempty"`
+}
+
+// BESUIGroupConstraints represents UI group constraints
+type BESUIGroupConstraints struct {
+	Win9xGroup   *struct{}           `xml:"Win9xGroup,omitempty" json:"win9xGroup,omitempty"`
+	WinNTGroup   *struct{}           `xml:"WinNTGroup,omitempty" json:"winNTGroup,omitempty"`
+	LocalGroup   []BESLocalGroup     `xml:"LocalGroup,omitempty" json:"localGroup,omitempty"`
+	DomainGroup  []BESDomainGroup    `xml:"DomainGroup,omitempty" json:"domainGroup,omitempty"`
+}
+
+// BESLocalGroup represents a local group constraint
+type BESLocalGroup struct {
+	Name string `xml:"Name,attr" json:"name"`
+}
+
+// BESDomainGroup represents a domain group constraint
+type BESDomainGroup struct {
+	Name string `xml:"Name,attr" json:"name"`
+	Sid  string `xml:"Sid,attr" json:"sid"`
+}
+
+// BESWhose represents whose constraints
+type BESWhose struct {
+	Property string `xml:"Property,omitempty" json:"property,omitempty"`
+	Relation string `xml:"Relation,omitempty" json:"relation,omitempty"`
+	Value    string `xml:"Value,omitempty" json:"value,omitempty"`
+}
+
+// BESRetryWait represents retry wait settings
+type BESRetryWait struct {
+	Behavior string `xml:"Behavior,attr,omitempty" json:"behavior,omitempty"`
+	Interval string `xml:",chardata" json:"interval"`
+}
+
+// BESPostActionBehavior represents post-action behavior settings
+type BESPostActionBehavior struct {
+	Behavior                      string    `xml:"Behavior,attr,omitempty" json:"behavior,omitempty"`
+	AllowCancel                   bool      `xml:"AllowCancel,omitempty" json:"allowCancel,omitempty"`
+	AllowPostponement             bool      `xml:"AllowPostponement,omitempty" json:"allowPostponement,omitempty"`
+	MaxPostponementInterval       string    `xml:"MaxPostponementInterval,omitempty" json:"maxPostponementInterval,omitempty"`
+	HasTimeout                    bool      `xml:"HasTimeout,omitempty" json:"hasTimeout,omitempty"`
+	TimeoutInterval               string    `xml:"TimeoutInterval,omitempty" json:"timeoutInterval,omitempty"`
+	PostActionDeadlineBehavior    string    `xml:"PostActionDeadlineBehavior,omitempty" json:"postActionDeadlineBehavior,omitempty"`
+	PostActionDeadlineInterval    string    `xml:"PostActionDeadlineInterval,omitempty" json:"postActionDeadlineInterval,omitempty"`
+	Title                         string    `xml:"Title,omitempty" json:"title,omitempty"`
+	Text                          string    `xml:"Text,omitempty" json:"text,omitempty"`
+}
+
+// Lock structs for settings locks
+
+// BESMessageLocks represents locks on message settings
+type BESMessageLocks struct {
+	Title            bool `xml:"Title,omitempty" json:"title,omitempty"`
+	Text             bool `xml:"Text,omitempty" json:"text,omitempty"`
+	ShowActionButton bool `xml:"ShowActionButton,omitempty" json:"showActionButton,omitempty"`
+	ShowCancelButton bool `xml:"ShowCancelButton,omitempty" json:"showCancelButton,omitempty"`
+	Postponement     bool `xml:"Postponement,omitempty" json:"postponement,omitempty"`
+	Timeout          bool `xml:"Timeout,omitempty" json:"timeout,omitempty"`
+}
+
+// BESPreActionLocks represents locks on pre-action settings
+type BESPreActionLocks struct {
+	Title            bool `xml:"Title,omitempty" json:"title,omitempty"`
+	Text             bool `xml:"Text,omitempty" json:"text,omitempty"`
+	AskToSaveWork    bool `xml:"AskToSaveWork,omitempty" json:"askToSaveWork,omitempty"`
+	ShowActionButton bool `xml:"ShowActionButton,omitempty" json:"showActionButton,omitempty"`
+	ShowCancelButton bool `xml:"ShowCancelButton,omitempty" json:"showCancelButton,omitempty"`
+	DeadlineBehavior bool `xml:"DeadlineBehavior,omitempty" json:"deadlineBehavior,omitempty"`
+	ShowConfirmation bool `xml:"ShowConfirmation,omitempty" json:"showConfirmation,omitempty"`
+}
+
+// BESRunningMessageLocks represents locks on running message settings
+type BESRunningMessageLocks struct {
+	Title bool `xml:"Title,omitempty" json:"title,omitempty"`
+	Text  bool `xml:"Text,omitempty" json:"text,omitempty"`
+}
+
+// BESPostActionBehaviorLocks represents locks on post-action behavior
+type BESPostActionBehaviorLocks struct {
+	Behavior     bool `xml:"Behavior,omitempty" json:"behavior,omitempty"`
+	AllowCancel  bool `xml:"AllowCancel,omitempty" json:"allowCancel,omitempty"`
+	Postponement bool `xml:"Postponement,omitempty" json:"postponement,omitempty"`
+	Timeout      bool `xml:"Timeout,omitempty" json:"timeout,omitempty"`
+	Deadline     bool `xml:"Deadline,omitempty" json:"deadline,omitempty"`
+	Title        bool `xml:"Title,omitempty" json:"title,omitempty"`
+	Text         bool `xml:"Text,omitempty" json:"text,omitempty"`
 }

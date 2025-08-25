@@ -2,270 +2,995 @@
 
 package bfrest
 
+// ActionSite represents an action site (legacy single site for backward compatibility)
+type ActionSite struct {
+	Resource    string `xml:"Resource,attr" json:"resource,omitempty"`
+	DisplayName string `xml:"DisplayName" json:"displayName,omitempty"`
+	GatherURL   string `xml:"GatherURL" json:"gatherUrl,omitempty"`
+	Name        string `xml:"Name" json:"name"`
+}
+
+// BESAPI represents the root BESAPI element containing all BES API response types
 type BESAPI struct {
-	Action []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"Action"`
-	ActionResults *struct {
-		Resource string `xml:"Resource,attr"`
-		ActionID int    `xml:"ActionID"`
-		Computer []struct {
-			ID         int     `xml:"ID,attr"`
-			Name       string  `xml:"Name,attr"`
-			ApplyCount int     `xml:"ApplyCount"`
-			EndTime    *string `xml:"EndTime"`
-			ExitCode   *int    `xml:"ExitCode"`
-			LineNumber int     `xml:"LineNumber"`
-			RetryCount int     `xml:"RetryCount"`
-			StartTime  *string `xml:"StartTime"`
-			State      struct {
-				IsError  int    `xml:"IsError,attr"`
-				CharData string `xml:",chardata"`
-			} `xml:"State"`
-			Status string `xml:"Status"`
-		} `xml:"Computer"`
-		DateIssued         string  `xml:"DateIssued"`
-		DateStopped        *string `xml:"DateStopped"`
-		MemberActionResult []struct {
-			Resource string `xml:"Resource,attr"`
-			ActionID int    `xml:"ActionID"`
-			Computer []struct {
-				ID         int    `xml:"ID,attr"`
-				Name       string `xml:"Name,attr"`
-				ApplyCount int    `xml:"ApplyCount"`
-				EndTime    string `xml:"EndTime"`
-				ExitCode   int    `xml:"ExitCode"`
-				LineNumber int    `xml:"LineNumber"`
-				RetryCount int    `xml:"RetryCount"`
-				StartTime  string `xml:"StartTime"`
-				State      struct {
-					IsError  int    `xml:"IsError,attr"`
-					CharData string `xml:",chardata"`
-				} `xml:"State"`
-				Status string `xml:"Status"`
-			} `xml:"Computer"`
-		} `xml:"MemberActionResult"`
-		Status    string `xml:"Status"`
-		StoppedBy *struct {
-			UserID   int    `xml:"UserID,attr"`
-			CharData string `xml:",chardata"`
-		} `xml:"StoppedBy"`
-	} `xml:"ActionResults"`
-	ActionSite *struct {
-		Resource    string `xml:"Resource,attr"`
-		DisplayName string `xml:"DisplayName"`
-		GatherURL   string `xml:"GatherURL"`
-		Name        string `xml:"Name"`
-	} `xml:"ActionSite"`
-	AdminField []struct {
-		Resource string `xml:"Resource,attr"`
-		Name     string `xml:"Name"`
-		Value    string `xml:"Value"`
-	} `xml:"AdminField"`
-	Analysis []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"Analysis"`
-	Baseline []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"Baseline"`
-	Computer []struct {
-		Resource       string `xml:"Resource,attr"`
-		ID             int    `xml:"ID"`
-		LastReportTime string `xml:"LastReportTime"`
-		Property       []struct {
-			Name     string `xml:"Name,attr"`
-			CharData string `xml:",chardata"`
-		} `xml:"Property"`
-	} `xml:"Computer"`
-	ComputerGroup []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"ComputerGroup"`
-	CustomSite []struct {
-		Resource    string `xml:"Resource,attr"`
-		DisplayName string `xml:"DisplayName"`
-		GatherURL   string `xml:"GatherURL"`
-		Name        string `xml:"Name"`
-	} `xml:"CustomSite"`
-	DashboardData []struct {
-		Resource  string  `xml:"Resource,attr"`
-		Dashboard string  `xml:"Dashboard"`
-		IsPrivate bool    `xml:"IsPrivate"`
-		Name      string  `xml:"Name"`
-		User      *string `xml:"User"`
-		Value     string  `xml:"Value"`
-	} `xml:"DashboardData"`
-	ExternalSite []struct {
-		Resource    string   `xml:"Resource,attr"`
-		DisplayName []string `xml:"DisplayName"`
-		GatherURL   string   `xml:"GatherURL"`
-		Name        string   `xml:"Name"`
-	} `xml:"ExternalSite"`
-	Fixlet []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"Fixlet"`
-	LDAPDirectory *struct {
-		Resource          string `xml:"Resource,attr"`
-		BaseDN            string `xml:"BaseDN"`
-		GroupFilter       string `xml:"GroupFilter"`
-		ID                int    `xml:"ID"`
-		IsActiveDirectory bool   `xml:"IsActiveDirectory"`
-		IsGlobalCatalog   bool   `xml:"IsGlobalCatalog"`
-		Name              string `xml:"Name"`
-		Servers           struct {
-			Server struct {
-				Host     string `xml:"Host"`
-				Port     int    `xml:"Port"`
-				Priority int    `xml:"Priority"`
-			} `xml:"Server"`
-		} `xml:"Servers"`
-		UIDAttribute string `xml:"UIDAttribute"`
-		UseSSL       bool   `xml:"UseSSL"`
-		UserFilter   string `xml:"UserFilter"`
-	} `xml:"LDAPDirectory"`
-	ManualComputerGroup *struct {
-		Resource         string `xml:"Resource,attr"`
-		ComputerID       []int  `xml:"ComputerID"`
-		EvaluateOnClient bool   `xml:"EvaluateOnClient"`
-		Name             string `xml:"Name"`
-	} `xml:"ManualComputerGroup"`
-	MastheadParameters *struct {
-		Resource                   string `xml:"Resource,attr"`
-		ArchiveAllowUTF8           bool   `xml:"ArchiveAllowUTF8"`
-		Controller                 string `xml:"Controller"`
-		Enhanced91Security         bool   `xml:"Enhanced91Security"`
-		GatherInterval             string `xml:"GatherInterval"`
-		InitialLockState           string `xml:"InitialLockState"`
-		PortNumber                 int    `xml:"PortNumber"`
-		RequireFIPSCompliantCrypto bool   `xml:"RequireFIPSCompliantCrypto"`
-		UseSHA256FileChecksOnly    bool   `xml:"UseSHA256FileChecksOnly"`
-		UseSHA384SignaturesOnly    bool   `xml:"UseSHA384SignaturesOnly"`
-	} `xml:"MastheadParameters"`
-	Operator []struct {
-		Resource                      string `xml:"Resource,attr"`
-		ActionScriptCommandsPrivilege string `xml:"ActionScriptCommandsPrivilege"`
-		CanCreateActions              bool   `xml:"CanCreateActions"`
-		CanLock                       bool   `xml:"CanLock"`
-		CanSendMultipleRefresh        bool   `xml:"CanSendMultipleRefresh"`
-		CanSubmitQueries              bool   `xml:"CanSubmitQueries"`
-		ComputerAssignments           *struct {
-			ByGroup struct {
-				Name     string `xml:"Name,attr"`
-				Resource string `xml:"Resource,attr"`
-				Type     string `xml:"Type,attr"`
-			} `xml:"ByGroup"`
-		} `xml:"ComputerAssignments"`
-		CustomContent   bool `xml:"CustomContent"`
-		InterfaceLogins struct {
-			API          bool `xml:"API"`
-			Applications struct {
-				Name []string `xml:"Name"`
-			} `xml:"Applications"`
-			Console bool `xml:"Console"`
-			WebUI   bool `xml:"WebUI"`
-		} `xml:"InterfaceLogins"`
-		LDAPDN                      *string `xml:"LDAPDN"`
-		LDAPServerID                *int    `xml:"LDAPServerID"`
-		LastLoginTime               string  `xml:"LastLoginTime"`
-		LoginPermission             string  `xml:"LoginPermission"`
-		MasterOperator              bool    `xml:"MasterOperator"`
-		Name                        string  `xml:"Name"`
-		PostActionBehaviorPrivilege string  `xml:"PostActionBehaviorPrivilege"`
-		ShowOtherActions            bool    `xml:"ShowOtherActions"`
-		StopOtherActions            bool    `xml:"StopOtherActions"`
-		UnmanagedAssetPrivilege     string  `xml:"UnmanagedAssetPrivilege"`
-	} `xml:"Operator"`
-	OperatorSite []struct {
-		Resource    string `xml:"Resource,attr"`
-		DisplayName string `xml:"DisplayName"`
-		GatherURL   string `xml:"GatherURL"`
-		Name        string `xml:"Name"`
-	} `xml:"OperatorSite"`
-	Property []struct {
-		Resource   string `xml:"Resource,attr"`
-		ID         int    `xml:"ID"`
-		IsReserved int    `xml:"IsReserved"`
-		Name       string `xml:"Name"`
-	} `xml:"Property"`
-	Role []struct {
-		Resource                      string `xml:"Resource,attr"`
-		ActionScriptCommandsPrivilege string `xml:"ActionScriptCommandsPrivilege"`
-		CanCreateActions              int    `xml:"CanCreateActions"`
-		CanLock                       int    `xml:"CanLock"`
-		CanSendMultipleRefresh        int    `xml:"CanSendMultipleRefresh"`
-		CanSubmitQueries              int    `xml:"CanSubmitQueries"`
-		ComputerAssignments           struct {
-			AllComputers *struct{} `xml:"AllComputers"`
-			ByGroup      *struct {
-				Name     string `xml:"Name,attr"`
-				Resource string `xml:"Resource,attr"`
-				Type     string `xml:"Type,attr"`
-			} `xml:"ByGroup"`
-		} `xml:"ComputerAssignments"`
-		CustomContent   int `xml:"CustomContent"`
-		ID              int `xml:"ID"`
-		InterfaceLogins struct {
-			API          bool `xml:"API"`
-			Applications struct {
-				Name []string `xml:"Name"`
-			} `xml:"Applications"`
-			Console bool `xml:"Console"`
-			WebUI   bool `xml:"WebUI"`
-		} `xml:"InterfaceLogins"`
-		LDAPGroups struct {
-			Group struct {
-				DN       string `xml:"DN"`
-				Name     string `xml:"Name"`
-				ServerID int    `xml:"ServerID"`
-			} `xml:"Group"`
-		} `xml:"LDAPGroups"`
-		MasterOperator int    `xml:"MasterOperator"`
-		Name           string `xml:"Name"`
-		Operators      struct {
-			Explicit  *string  `xml:"Explicit"`
-			Inherited []string `xml:"Inherited"`
-		} `xml:"Operators"`
-		PostActionBehaviorPrivilege string `xml:"PostActionBehaviorPrivilege"`
-		ShowOtherActions            int    `xml:"ShowOtherActions"`
-		Sites                       *struct {
-			CustomSite []struct {
-				Name       string `xml:"Name"`
-				Permission string `xml:"Permission"`
-			} `xml:"CustomSite"`
-			ExternalSite []struct {
-				Name       string `xml:"Name"`
-				Permission string `xml:"Permission"`
-			} `xml:"ExternalSite"`
-		} `xml:"Sites"`
-		StopOtherActions        int    `xml:"StopOtherActions"`
-		UnmanagedAssetPrivilege string `xml:"UnmanagedAssetPrivilege"`
-	} `xml:"Role"`
-	SystemOptions *struct {
-		Resource                string `xml:"Resource,attr"`
-		DefaultFixletVisibility string `xml:"DefaultFixletVisibility"`
-		MinimumRefreshSeconds   int    `xml:"MinimumRefreshSeconds"`
-	} `xml:"SystemOptions"`
-	Task []struct {
-		LastModified string `xml:"LastModified,attr"`
-		Resource     string `xml:"Resource,attr"`
-		ID           int    `xml:"ID"`
-		Name         string `xml:"Name"`
-	} `xml:"Task"`
-	WebReports struct {
-		URL string `xml:"URL"`
-	} `xml:"WebReports"`
+	// Action elements
+	Action []Action `xml:"Action" json:"action,omitempty"`
+
+	// ActionDownload elements
+	ActionDownload []ActionDownload `xml:"ActionDownload" json:"actionDownload,omitempty"`
+
+	// ActionResults elements
+	ActionResults []ActionResults `xml:"ActionResults" json:"actionResults,omitempty"`
+
+	// ActionSite elements (single site for backward compatibility)
+	ActionSite *ActionSite `xml:"ActionSite" json:"actionSite,omitempty"`
+
+	// AdminField elements
+	AdminField []AdminField `xml:"AdminField" json:"adminField,omitempty"`
+
+	// Analysis elements
+	Analysis []Analysis `xml:"Analysis" json:"analysis,omitempty"`
+
+	// AnalysisActivation elements
+	AnalysisActivation []AnalysisActivation `xml:"AnalysisActivation" json:"analysisActivation,omitempty"`
+
+	// AnalysisProperty elements
+	AnalysisProperty []AnalysisProperty `xml:"AnalysisProperty" json:"analysisProperty,omitempty"`
+
+	// ArchiveManagerFile elements
+	ArchiveManagerFile []ArchiveManagerFile `xml:"ArchiveManagerFile" json:"archiveManagerFile,omitempty"`
+
+	// Baseline elements
+	Baseline []Baseline `xml:"Baseline" json:"baseline,omitempty"`
+
+	// ClientQuery elements
+	ClientQuery []ClientQuery `xml:"ClientQuery" json:"clientQuery,omitempty"`
+
+	// ClientQueryResults elements
+	ClientQueryResults []ClientQueryResults `xml:"ClientQueryResults" json:"clientQueryResults,omitempty"`
+
+	// ClientReports elements
+	ClientReports []ClientReports `xml:"ClientReports" json:"clientReports,omitempty"`
+
+	// Computer elements
+	Computer []Computer `xml:"Computer" json:"computer,omitempty"`
+
+	// ComputerGroup elements
+	ComputerGroup []ComputerGroup `xml:"ComputerGroup" json:"computerGroup,omitempty"`
+
+	// ComputerMailboxFile elements
+	ComputerMailboxFile []ComputerMailboxFile `xml:"ComputerMailboxFile" json:"computerMailboxFile,omitempty"`
+
+	// ComputerSettings elements
+	ComputerSettings []ComputerSettings `xml:"ComputerSettings" json:"computerSettings,omitempty"`
+
+	// ComputerSetting elements
+	ComputerSetting []ComputerSetting `xml:"ComputerSetting" json:"computerSetting,omitempty"`
+
+	// CustomSite elements
+	CustomSite []CustomSite `xml:"CustomSite" json:"customSite,omitempty"`
+
+	// DashboardData elements
+	DashboardData []DashboardData `xml:"DashboardData" json:"dashboardData,omitempty"`
+
+	// Error elements
+	Error []string `xml:"Error" json:"error,omitempty"`
+
+	// Explorer elements
+	Explorer []Explorer `xml:"Explorer" json:"explorer,omitempty"`
+
+	// ExplorerDetails elements
+	ExplorerDetails []ExplorerDetails `xml:"ExplorerDetails" json:"explorerDetails,omitempty"`
+
+	// ExplorerPriority elements
+	ExplorerPriority []ExplorerPriority `xml:"ExplorerPriority" json:"explorerPriority,omitempty"`
+
+	// ExternalSite elements
+	ExternalSite []ExternalSite `xml:"ExternalSite" json:"externalSite,omitempty"`
+
+	// FileUpload elements
+	FileUpload []FileUpload `xml:"FileUpload" json:"fileUpload,omitempty"`
+
+	// FileUploadReference elements
+	FileUploadReference []FileUploadReference `xml:"FileUploadReference" json:"fileUploadReference,omitempty"`
+
+	// Fixlet elements
+	Fixlet []Fixlet `xml:"Fixlet" json:"fixlet,omitempty"`
+
+	// IDPDirectory elements
+	IDPDirectory []IDPDirectory `xml:"IDPDirectory" json:"idpDirectory,omitempty"`
+
+	// LDAPDirectory elements
+	LDAPDirectory []LDAPDirectory `xml:"LDAPDirectory" json:"ldapDirectory,omitempty"`
+
+	// ManualComputerGroup elements
+	ManualComputerGroup []ManualComputerGroup `xml:"ManualComputerGroup" json:"manualComputerGroup,omitempty"`
+
+	// MastheadParameters elements
+	MastheadParameters []MastheadParameters `xml:"MastheadParameters" json:"mastheadParameters,omitempty"`
+
+	// MultipleActionGroup elements
+	MultipleActionGroup []MultipleActionGroup `xml:"MultipleActionGroup" json:"multipleActionGroup,omitempty"`
+
+	// Operator elements
+	Operator []Operator `xml:"Operator" json:"operator,omitempty"`
+
+	// OperatorSite elements
+	OperatorSite []OperatorSite `xml:"OperatorSite" json:"operatorSite,omitempty"`
+
+	// Property elements
+	Property []Property `xml:"Property" json:"property,omitempty"`
+
+	// PushNotification elements
+	PushNotification []PushNotification `xml:"PushNotification" json:"pushNotification,omitempty"`
+
+	// Query elements
+	Query []Query `xml:"Query" json:"query,omitempty"`
+
+	// RelaySiteRequestResult elements
+	RelaySiteRequestResult []RelaySiteRequestResult `xml:"RelaySiteRequestResult" json:"relaySiteRequestResult,omitempty"`
+
+	// ReplicationLink elements
+	ReplicationLink []ReplicationLink `xml:"ReplicationLink" json:"replicationLink,omitempty"`
+
+	// ReplicationServer elements
+	ReplicationServer []ReplicationServer `xml:"ReplicationServer" json:"replicationServer,omitempty"`
+
+	// RetryDownload elements
+	RetryDownload []RetryDownload `xml:"RetryDownload" json:"retryDownload,omitempty"`
+
+	// Role elements
+	Role []Role `xml:"Role" json:"role,omitempty"`
+
+	// SAMLProvider elements
+	SAMLProvider []SAMLProvider `xml:"SAMLProvider" json:"samlProvider,omitempty"`
+
+	// ServerBasedGroup elements
+	ServerBasedGroup []ServerBasedGroup `xml:"ServerBasedGroup" json:"serverBasedGroup,omitempty"`
+
+	// Session elements
+	Session []Session `xml:"Session" json:"session,omitempty"`
+
+	// SingleAction elements
+	SingleAction []SingleAction `xml:"SingleAction" json:"singleAction,omitempty"`
+
+	// Site elements
+	Site []Site `xml:"Site" json:"site,omitempty"`
+
+	// SiteFile elements
+	SiteFile []SiteFile `xml:"SiteFile" json:"siteFile,omitempty"`
+
+	// SitePermission elements
+	SitePermission []SitePermission `xml:"SitePermission" json:"sitePermission,omitempty"`
+
+	// SiteVersion elements
+	SiteVersion []SiteVersion `xml:"SiteVersion" json:"siteVersion,omitempty"`
+
+	// SystemOptions elements
+	SystemOptions []SystemOptions `xml:"SystemOptions" json:"systemOptions,omitempty"`
+
+	// Task elements
+	Task []Task `xml:"Task" json:"task,omitempty"`
+
+	// UnicastNotification elements
+	UnicastNotification []UnicastNotification `xml:"UnicastNotification" json:"unicastNotification,omitempty"`
+
+	// Warning elements
+	Warning []string `xml:"Warning" json:"warning,omitempty"`
+
+	// WebReports elements
+	WebReports []WebReports `xml:"WebReports" json:"webReports,omitempty"`
+
+	// WebReportsServers elements
+	WebReportsServers []WebReportsServers `xml:"WebReportsServers" json:"webReportsServers,omitempty"`
+
+	// WebReportsPriority elements
+	WebReportsPriority []WebReportsPriority `xml:"WebReportsPriority" json:"webReportsPriority,omitempty"`
+}
+
+// Action represents an action in the BES system
+type Action struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name,omitempty"`
+	ID           int    `xml:"ID" json:"id,omitempty"`
+}
+
+// ActionDownload represents download information for actions
+type ActionDownload struct {
+	DownloadRequestTarget DownloadRequestTarget `xml:"DownloadRequestTarget" json:"downloadRequestTarget"`
+	Status                DownloadStatus        `xml:"Status" json:"status"`
+	Available             bool                  `xml:"Available" json:"available"`
+	BytesDownloaded       uint32                `xml:"BytesDownloaded" json:"bytesDownloaded"`
+	TotalBytes            uint32                `xml:"TotalBytes" json:"totalBytes"`
+	RetryLimit            uint8                 `xml:"RetryLimit" json:"retryLimit"`
+}
+
+// DownloadRequestTarget represents the target for download requests
+type DownloadRequestTarget struct {
+	ActionID uint8  `xml:"ActionID" json:"actionId"`
+	Index    uint8  `xml:"Index" json:"index"`
+	Hashes   Hashes `xml:"Hashes" json:"hashes"`
+	Size     uint32 `xml:"Size" json:"size"`
+	URL      string `xml:"URL" json:"url"`
+}
+
+// Hashes represents hash information
+type Hashes struct {
+	HashAlgorithm string `xml:"hashAlgorithm,attr" json:"hashAlgorithm"`
+	Value         string `xml:",chardata" json:"value"`
+}
+
+// DownloadStatus represents the status of a download
+type DownloadStatus struct {
+	State      string `xml:"State" json:"state"`
+	Timestamp  string `xml:"Timestamp" json:"timestamp"`
+	RetryCount uint8  `xml:"RetryCount" json:"retryCount"`
+}
+
+// ActionResults represents the results of an action
+type ActionResults struct {
+	Resource             string                 `xml:"Resource,attr" json:"resource,omitempty"`
+	ActionID             int                    `xml:"ActionID" json:"actionId"`
+	Status               string                 `xml:"Status" json:"status"`
+	DateIssued           string                 `xml:"DateIssued,omitempty" json:"dateIssued,omitempty"`
+	Computer             []ComputerResultType   `xml:"Computer,omitempty" json:"computer,omitempty"`
+	MemberActionResult   []MemberActionResult   `xml:"MemberActionResult,omitempty" json:"memberActionResult,omitempty"`
+}
+
+// MemberActionResult represents results for member actions
+type MemberActionResult struct {
+	Resource string               `xml:"Resource,attr" json:"resource,omitempty"`
+	ActionID int                  `xml:"ActionID" json:"actionId"`
+	Computer []ComputerResultType `xml:"Computer,omitempty" json:"computer,omitempty"`
+}
+
+// ComputerResultType represents the result of an action on a computer
+type ComputerResultType struct {
+	ID         int    `xml:"ID,attr" json:"id"`
+	Name       string `xml:"Name,attr" json:"name"`
+	Status     string `xml:"Status" json:"status"`
+	State      State  `xml:"State" json:"state"`
+	ExitCode   *int   `xml:"ExitCode,omitempty" json:"exitCode,omitempty"`
+	ApplyCount int    `xml:"ApplyCount" json:"applyCount"`
+	RetryCount int    `xml:"RetryCount" json:"retryCount"`
+	LineNumber int    `xml:"LineNumber" json:"lineNumber"`
+	StartTime  string `xml:"StartTime,omitempty" json:"startTime,omitempty"`
+	EndTime    string `xml:"EndTime,omitempty" json:"endTime,omitempty"`
+	Computer   []ComputerResultType `xml:"Computer,omitempty" json:"computer,omitempty"`
+}
+
+// State represents the state of an action result
+type State struct {
+	IsError bool   `xml:"IsError,attr" json:"isError"`
+	Value   int    `xml:",chardata" json:"value"`
+}
+
+// AdminField represents administrative fields
+type AdminField struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Name     string `xml:"Name" json:"name,omitempty"`
+	Value    string `xml:"Value" json:"value,omitempty"`
+}
+
+// Analysis represents an analysis object
+type Analysis struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// AnalysisActivation represents analysis activation
+type AnalysisActivation struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// AnalysisProperty represents a property of an analysis
+type AnalysisProperty struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Name     string `xml:"Name,attr" json:"name"`
+	ID       int    `xml:"ID,attr" json:"id"`
+	Value    string `xml:",chardata" json:"value"`
+}
+
+// ArchiveManagerFile represents a file managed by the archive manager
+type ArchiveManagerFile struct {
+	Resource        string `xml:"Resource,attr" json:"resource,omitempty"`
+	FileName        string `xml:"FileName" json:"fileName"`
+	FileLocation    string `xml:"FileLocation" json:"fileLocation"`
+	FileSize        int    `xml:"FileSize" json:"fileSize"`
+	ComputerID      int    `xml:"ComputerId" json:"computerId"`
+	Sha256Checksum  string `xml:"Sha256Checksum" json:"sha256Checksum"`
+	Sequence        int    `xml:"Sequence" json:"sequence"`
+	FileReceivedAt  int    `xml:"FileReceivedAt" json:"fileReceivedAt"`
+}
+
+// Baseline represents a baseline object
+type Baseline struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// ClientQuery represents a client query request
+type ClientQuery struct {
+	ApplicabilityRelevance string                `xml:"ApplicabilityRelevance" json:"applicabilityRelevance"`
+	QueryText              string                `xml:"QueryText" json:"queryText"`
+	UseClientContext       bool                  `xml:"UseClientContext,omitempty" json:"useClientContext,omitempty"`
+	Target                 *BESClientQueryTarget `xml:"Target,omitempty" json:"target,omitempty"`
+}
+
+// BESClientQueryTarget represents the target for client queries
+type BESClientQueryTarget struct {
+	ComputerName    []string       `xml:"ComputerName,omitempty" json:"computerName,omitempty"`
+	ComputerID      []int          `xml:"ComputerID,omitempty" json:"computerId,omitempty"`
+	CustomRelevance string         `xml:"CustomRelevance,omitempty" json:"customRelevance,omitempty"`
+	ComputerGroup   []ComputerGroupTarget `xml:"ComputerGroup,omitempty" json:"computerGroup,omitempty"`
+}
+
+// ComputerGroupTarget represents a computer group target
+type ComputerGroupTarget struct {
+	Name     string `xml:"Name" json:"name"`
+	SiteName string `xml:"SiteName" json:"siteName"`
+}
+
+// ClientQueryResults represents the results of a client query
+type ClientQueryResults struct {
+	ReportingAgents int           `xml:"ReportingAgents" json:"reportingAgents"`
+	TotalResults    int           `xml:"TotalResults" json:"totalResults"`
+	QueryResult     []QueryResult `xml:"QueryResult,omitempty" json:"queryResult,omitempty"`
+}
+
+// QueryResult represents a single query result
+type QueryResult struct {
+	ComputerID   int    `xml:"ComputerID" json:"computerId"`
+	ComputerName string `xml:"ComputerName" json:"computerName"`
+	SubQueryID   int    `xml:"SubQueryID" json:"subQueryId"`
+	IsFailure    bool   `xml:"IsFailure" json:"isFailure"`
+	ResponseTime string `xml:"ResponseTime" json:"responseTime"`
+	Result       string `xml:"Result" json:"result"`
+	ErrorMessage string `xml:"ErrorMessage" json:"errorMessage"`
+}
+
+// ClientReports represents client report information
+type ClientReports struct {
+	Resource         string `xml:"Resource,attr" json:"resource"`
+	EncryptionStatus string `xml:"EncryptionStatus" json:"encryptionStatus"`
+	Details          string `xml:"Details,omitempty" json:"details,omitempty"`
+	KeySize          string `xml:"KeySize,omitempty" json:"keySize,omitempty"`
+}
+
+// Computer represents a computer in the BES system
+type Computer struct {
+	Resource           string                `xml:"Resource,attr" json:"resource,omitempty"`
+	LastReportTime     string                `xml:"LastReportTime,omitempty" json:"lastReportTime,omitempty"`
+	ID                 []int                 `xml:"ID,omitempty" json:"id,omitempty"`
+	Property           []ComputerProperty    `xml:"Property,omitempty" json:"property,omitempty"`
+	Setting            []ComputerSetting     `xml:"Setting,omitempty" json:"setting,omitempty"`
+	ManagementExtension []ManagementExtension `xml:"ManagementExtension,omitempty" json:"managementExtension,omitempty"`
+}
+
+// ComputerProperty represents a computer property
+type ComputerProperty struct {
+	Name  string `xml:"Name,attr" json:"name"`
+	Value string `xml:",chardata" json:"value"`
+}
+
+// ManagementExtension represents management extensions
+type ManagementExtension struct {
+	Type     string                     `xml:"Type,attr" json:"type,omitempty"`
+	Property []ManagementExtensionProp `xml:"Property,omitempty" json:"property,omitempty"`
+	Setting  []ComputerSetting          `xml:"Setting,omitempty" json:"setting,omitempty"`
+}
+
+// ManagementExtensionProp represents properties in management extensions
+type ManagementExtensionProp struct {
+	Type  string `xml:"Type,attr" json:"type"`
+	Value string `xml:",chardata" json:"value"`
+}
+
+// ComputerGroup represents a computer group
+type ComputerGroup struct {
+	Resource     string `xml:"Resource,attr" json:"resource"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// ComputerMailboxFile represents a file in a computer's mailbox
+type ComputerMailboxFile struct {
+	Resource            string                     `xml:"Resource,attr" json:"resource,omitempty"`
+	Name                string                     `xml:"Name,omitempty" json:"name,omitempty"`
+	ID                  int                        `xml:"ID,omitempty" json:"id,omitempty"`
+	SHA1                string                     `xml:"SHA1,omitempty" json:"sha1,omitempty"`
+	Size                string                     `xml:"Size,omitempty" json:"size,omitempty"`
+	Timestamp           string                     `xml:"Timestamp,omitempty" json:"timestamp,omitempty"`
+	ManagementExtension []MailboxManagementExt    `xml:"ManagementExtension,omitempty" json:"managementExtension,omitempty"`
+}
+
+// MailboxManagementExt represents management extensions for mailbox files
+type MailboxManagementExt struct {
+	Type                string                      `xml:"Type,attr" json:"type,omitempty"`
+	ComputerMailboxFile []ComputerMailboxFileNested `xml:"ComputerMailboxFile" json:"computerMailboxFile"`
+}
+
+// ComputerMailboxFileNested represents nested mailbox files
+type ComputerMailboxFileNested struct {
+	Name      string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID        int    `xml:"ID,omitempty" json:"id,omitempty"`
+	SHA1      string `xml:"SHA1,omitempty" json:"sha1,omitempty"`
+	Size      string `xml:"Size,omitempty" json:"size,omitempty"`
+	Timestamp string `xml:"Timestamp,omitempty" json:"timestamp,omitempty"`
+}
+
+// ComputerSettings represents computer settings configuration
+type ComputerSettings struct {
+	Resource        string           `xml:"Resource,attr" json:"resource,omitempty"`
+	TargetComputers *TargetComputers `xml:"TargetComputers,omitempty" json:"targetComputers,omitempty"`
+	Setting         []ComputerSetting `xml:"Setting,omitempty" json:"setting,omitempty"`
+}
+
+// TargetComputers represents target computers for settings
+type TargetComputers struct {
+	ComputerID []int `xml:"ComputerID" json:"computerId"`
+}
+
+// ComputerSetting represents a computer setting
+type ComputerSetting struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Name     string `xml:"Name" json:"name"`
+	Value    string `xml:"Value" json:"value"`
+}
+
+// CustomSite represents a custom site
+type CustomSite struct {
+	Resource     string `xml:"Resource,attr" json:"resource"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	DisplayName  string `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL    string `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+}
+
+// DashboardData represents dashboard data
+type DashboardData struct {
+	Resource  string `xml:"Resource,attr" json:"resource,omitempty"`
+	Dashboard string `xml:"Dashboard,omitempty" json:"dashboard,omitempty"`
+	Name      string `xml:"Name,omitempty" json:"name,omitempty"`
+	IsPrivate bool   `xml:"IsPrivate,omitempty" json:"isPrivate,omitempty"`
+	User      string `xml:"User,omitempty" json:"user,omitempty"`
+	Value     string `xml:"Value,omitempty" json:"value,omitempty"`
+}
+
+// Explorer represents Explorer information
+type Explorer struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	URL      string `xml:"URL" json:"url"`
+}
+
+// ExplorerDetails represents detailed Explorer information
+type ExplorerDetails struct {
+	Explorer ExplorerInfo `xml:"Explorer" json:"explorer"`
+}
+
+// ExplorerInfo represents Explorer information details
+type ExplorerInfo struct {
+	URL      string `xml:"URL" json:"url"`
+	Name     string `xml:"Name" json:"name"`
+	Priority int    `xml:"Priority" json:"priority"`
+}
+
+// ExplorerPriority represents Explorer priority
+type ExplorerPriority struct {
+	Priority int `xml:"Priority" json:"priority"`
+}
+
+// ExternalSite represents an external site
+type ExternalSite struct {
+	Resource     string `xml:"Resource,attr" json:"resource"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	DisplayName  string `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL    string `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+}
+
+// FileUpload represents a file upload
+type FileUpload struct {
+	Resource    string `xml:"Resource,attr" json:"resource,omitempty"`
+	Name        string `xml:"Name" json:"name"`
+	URL         string `xml:"URL" json:"url"`
+	Size        int    `xml:"Size" json:"size"`
+	SHA1        string `xml:"SHA1" json:"sha1"`
+	SHA256      string `xml:"SHA256" json:"sha256"`
+	Available   bool   `xml:"Available" json:"available"`
+	ReferenceID int    `xml:"ReferenceID,omitempty" json:"referenceId,omitempty"`
+}
+
+// FileUploadReference represents a file upload reference
+type FileUploadReference struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	ID           int    `xml:"ID" json:"id"`
+	UserID       int    `xml:"UserID,omitempty" json:"userId,omitempty"`
+	CreationTime string `xml:"CreationTime" json:"creationTime"`
+	IsPrivate    bool   `xml:"IsPrivate" json:"isPrivate"`
+}
+
+// Fixlet represents a fixlet
+type Fixlet struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// IDPDirectory represents an IDP directory configuration
+type IDPDirectory struct {
+	Resource                string       `xml:"Resource,attr" json:"resource,omitempty"`
+	ID                      int          `xml:"ID,omitempty" json:"id,omitempty"`
+	Name                    string       `xml:"Name,omitempty" json:"name,omitempty"`
+	IdpType                 int          `xml:"IdpType" json:"idpType"`
+	IsGlobalCatalog         bool         `xml:"IsGlobalCatalog,omitempty" json:"isGlobalCatalog,omitempty"`
+	UseSSL                  bool         `xml:"UseSSL,omitempty" json:"useSSL,omitempty"`
+	AllowEmptyPasswords     bool         `xml:"AllowEmptyPasswords,omitempty" json:"allowEmptyPasswords,omitempty"`
+	BaseDN                  string       `xml:"BaseDN,omitempty" json:"baseDN,omitempty"`
+	UIDAttribute            string       `xml:"UIDAttribute,omitempty" json:"uidAttribute,omitempty"`
+	UserFilter              string       `xml:"UserFilter,omitempty" json:"userFilter,omitempty"`
+	GroupFilter             string       `xml:"GroupFilter,omitempty" json:"groupFilter,omitempty"`
+	TenantID                string       `xml:"TenantID,omitempty" json:"tenantId,omitempty"`
+	ClientID                string       `xml:"ClientID,omitempty" json:"clientId,omitempty"`
+	ClientSecret            string       `xml:"ClientSecret,omitempty" json:"clientSecret,omitempty"`
+	JwtCertificateServerPath string      `xml:"JwtCertificateServerPath,omitempty" json:"jwtCertificateServerPath,omitempty"`
+	JwtCertificate          string       `xml:"JwtCertificate,omitempty" json:"jwtCertificate,omitempty"`
+	PrivateKeyPassword      string       `xml:"PrivateKeyPassword,omitempty" json:"privateKeyPassword,omitempty"`
+	User                    string       `xml:"User,omitempty" json:"user,omitempty"`
+	Password                string       `xml:"Password,omitempty" json:"password,omitempty"`
+	Servers                 *LDAPServers `xml:"Servers,omitempty" json:"servers,omitempty"`
+}
+
+// LDAPDirectory represents an LDAP directory configuration
+type LDAPDirectory struct {
+	Resource            string       `xml:"Resource,attr" json:"resource,omitempty"`
+	ID                  int          `xml:"ID,omitempty" json:"id,omitempty"`
+	Name                string       `xml:"Name,omitempty" json:"name,omitempty"`
+	IsActiveDirectory   bool         `xml:"IsActiveDirectory,omitempty" json:"isActiveDirectory,omitempty"`
+	IsGlobalCatalog     bool         `xml:"IsGlobalCatalog,omitempty" json:"isGlobalCatalog,omitempty"`
+	UseSSL              bool         `xml:"UseSSL,omitempty" json:"useSSL,omitempty"`
+	AllowEmptyPasswords bool         `xml:"AllowEmptyPasswords,omitempty" json:"allowEmptyPasswords,omitempty"`
+	BaseDN              string       `xml:"BaseDN,omitempty" json:"baseDN,omitempty"`
+	UIDAttribute        string       `xml:"UIDAttribute,omitempty" json:"uidAttribute,omitempty"`
+	UserFilter          string       `xml:"UserFilter,omitempty" json:"userFilter,omitempty"`
+	GroupFilter         string       `xml:"GroupFilter,omitempty" json:"groupFilter,omitempty"`
+	User                string       `xml:"User,omitempty" json:"user,omitempty"`
+	Password            string       `xml:"Password,omitempty" json:"password,omitempty"`
+	Servers             *LDAPServers `xml:"Servers,omitempty" json:"servers,omitempty"`
+}
+
+// LDAPServers represents a collection of LDAP servers
+type LDAPServers struct {
+	Server []LDAPServer `xml:"Server" json:"server"`
+}
+
+// LDAPServer represents an LDAP server
+type LDAPServer struct {
+	Host     string `xml:"Host" json:"host"`
+	Port     int    `xml:"Port" json:"port"`
+	Priority int    `xml:"Priority" json:"priority"`
+}
+
+// ManualComputerGroup represents a manually managed computer group
+type ManualComputerGroup struct {
+	Resource         string `xml:"Resource,attr" json:"resource,omitempty"`
+	Name             string `xml:"Name" json:"name"`
+	EvaluateOnClient bool   `xml:"EvaluateOnClient" json:"evaluateOnClient"`
+	ComputerID       []int  `xml:"ComputerID,omitempty" json:"computerId,omitempty"`
+}
+
+// MastheadParameters represents masthead configuration parameters
+type MastheadParameters struct {
+	PortNumber                 string `xml:"PortNumber,omitempty" json:"portNumber,omitempty"`
+	GatherInterval             string `xml:"GatherInterval,omitempty" json:"gatherInterval,omitempty"`
+	Controller                 string `xml:"Controller,omitempty" json:"controller,omitempty"`
+	InitialLockState           string `xml:"InitialLockState,omitempty" json:"initialLockState,omitempty"`
+	InitialLockDuration        int    `xml:"InitialLockDuration,omitempty" json:"initialLockDuration,omitempty"`
+	ActionLockExemptionURL     string `xml:"ActionLockExemptionURL,omitempty" json:"actionLockExemptionUrl,omitempty"`
+	RequireFIPSCompliantCrypto bool   `xml:"RequireFIPSCompliantCrypto,omitempty" json:"requireFipsCompliantCrypto,omitempty"`
+	MinimumSupportedClient     string `xml:"MinimumSupportedClient,omitempty" json:"minimumSupportedClient,omitempty"`
+}
+
+// MultipleActionGroup represents a multiple action group
+type MultipleActionGroup struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// Operator represents a BES operator
+type Operator struct {
+	Resource                      string           `xml:"Resource,attr" json:"resource,omitempty"`
+	Name                          string           `xml:"Name,omitempty" json:"name,omitempty"`
+	ID                            int              `xml:"ID,omitempty" json:"id,omitempty"`
+	LastLoginTime                 string           `xml:"LastLoginTime,omitempty" json:"lastLoginTime,omitempty"`
+	Password                      string           `xml:"Password,omitempty" json:"password,omitempty"`
+	LDAPServerID                  int              `xml:"LDAPServerID,omitempty" json:"ldapServerId,omitempty"`
+	LDAPDN                        string           `xml:"LDAPDN,omitempty" json:"ldapDN,omitempty"`
+	MasterOperator                bool             `xml:"MasterOperator,omitempty" json:"masterOperator,omitempty"`
+	CustomContent                 bool             `xml:"CustomContent,omitempty" json:"customContent,omitempty"`
+	ShowOtherActions              bool             `xml:"ShowOtherActions,omitempty" json:"showOtherActions,omitempty"`
+	StopOtherActions              bool             `xml:"StopOtherActions,omitempty" json:"stopOtherActions,omitempty"`
+	CanCreateActions              bool             `xml:"CanCreateActions,omitempty" json:"canCreateActions,omitempty"`
+	PostActionBehaviorPrivilege   string           `xml:"PostActionBehaviorPrivilege,omitempty" json:"postActionBehaviorPrivilege,omitempty"`
+	ActionScriptCommandsPrivilege string           `xml:"ActionScriptCommandsPrivilege,omitempty" json:"actionScriptCommandsPrivilege,omitempty"`
+	CanLock                       bool             `xml:"CanLock,omitempty" json:"canLock,omitempty"`
+	CanSendMultipleRefresh        bool             `xml:"CanSendMultipleRefresh,omitempty" json:"canSendMultipleRefresh,omitempty"`
+	CanSubmitQueries              bool             `xml:"CanSubmitQueries,omitempty" json:"canSubmitQueries,omitempty"`
+	LoginPermission               string           `xml:"LoginPermission,omitempty" json:"loginPermission,omitempty"`
+	UnmanagedAssetPrivilege       string           `xml:"UnmanagedAssetPrivilege,omitempty" json:"unmanagedAssetPrivilege,omitempty"`
+	InterfaceLogins               *InterfaceLogins `xml:"InterfaceLogins,omitempty" json:"interfaceLogins,omitempty"`
+	ApproverRoleID                int              `xml:"ApproverRoleID,omitempty" json:"approverRoleId,omitempty"`
+	ComputerAssignments           *DynamicTarget   `xml:"ComputerAssignments,omitempty" json:"computerAssignments,omitempty"`
+}
+
+// OperatorSite represents an operator site
+type OperatorSite struct {
+	Resource     string `xml:"Resource,attr" json:"resource"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	DisplayName  string `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	GatherURL    string `xml:"GatherURL,omitempty" json:"gatherUrl,omitempty"`
+}
+
+// Property represents a BES property
+type Property struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name" json:"name"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+	IsReserved   bool   `xml:"IsReserved,omitempty" json:"isReserved,omitempty"`
+}
+
+// PushNotification represents a push notification
+type PushNotification struct {
+	Type       string `xml:"Type" json:"type"`
+	Payload    string `xml:"Payload" json:"payload"`
+	ComputerID []int  `xml:"ComputerID" json:"computerId"`
+}
+
+// Query represents a BES relevance query and its result
+type Query struct {
+	Resource   string          `xml:"Resource,attr" json:"resource,omitempty"`
+	Result     RelevanceResult `xml:"Result" json:"result"`
+	Evaluation *Evaluation     `xml:"Evaluation,omitempty" json:"evaluation,omitempty"`
+	Error      string          `xml:"Error,omitempty" json:"error,omitempty"`
+}
+
+// RelevanceResult represents the result of a relevance query
+type RelevanceResult struct {
+	Answer []RelevanceAnswer `xml:"Answer,omitempty" json:"answer,omitempty"`
+	Tuple  []RelevanceResult `xml:"Tuple,omitempty" json:"tuple,omitempty"`
+}
+
+// RelevanceAnswer represents an answer in a relevance result
+type RelevanceAnswer struct {
+	Type  string `xml:"type,attr" json:"type,omitempty"`
+	Value string `xml:",chardata" json:"value"`
+}
+
+// Evaluation represents query evaluation information
+type Evaluation struct {
+	Time      string `xml:"Time" json:"time"`
+	Plurality string `xml:"Plurality" json:"plurality"`
+}
+
+// RelaySiteRequestResult represents the result of a relay site request
+type RelaySiteRequestResult struct {
+	RelayComputerID   int         `xml:"RelayComputerID" json:"relayComputerId"`
+	RelayMasterSite   *RelaySite  `xml:"RelayMasterSite,omitempty" json:"relayMasterSite,omitempty"`
+	RelayCustomSite   []RelaySite `xml:"RelayCustomSite,omitempty" json:"relayCustomSite,omitempty"`
+	RelayOperatorSite []RelaySite `xml:"RelayOperatorSite,omitempty" json:"relayOperatorSite,omitempty"`
+	RelayExternalSite []RelaySite `xml:"RelayExternalSite,omitempty" json:"relayExternalSite,omitempty"`
+}
+
+// RelaySite represents a relay site
+type RelaySite struct {
+	SiteName        string `xml:"SiteName" json:"siteName"`
+	SiteVersionDiff int    `xml:"SiteVersionDiff,omitempty" json:"siteVersionDiff,omitempty"`
+	SiteVersion     int    `xml:"SiteVersion,omitempty" json:"siteVersion,omitempty"`
+}
+
+// ReplicationLink represents a replication link
+type ReplicationLink struct {
+	Resource            string `xml:"Resource,attr" json:"resource,omitempty"`
+	SourceServerID      int    `xml:"SourceServerID" json:"sourceServerId"`
+	DestinationServerID int    `xml:"DestinationServerID" json:"destinationServerId"`
+	Weight              int    `xml:"Weight" json:"weight"`
+	IsConnected         bool   `xml:"IsConnected,omitempty" json:"isConnected,omitempty"`
+	LastReplication     string `xml:"LastReplication,omitempty" json:"lastReplication,omitempty"`
+	LastError           string `xml:"LastError,omitempty" json:"lastError,omitempty"`
+}
+
+// ReplicationServer represents a replication server
+type ReplicationServer struct {
+	Resource                   string            `xml:"Resource,attr" json:"resource,omitempty"`
+	ServerID                   int               `xml:"ServerID,omitempty" json:"serverId,omitempty"`
+	URL                        string            `xml:"URL,omitempty" json:"url,omitempty"`
+	DNS                        string            `xml:"DNS,omitempty" json:"dns,omitempty"`
+	ReplicationIntervalSeconds int               `xml:"ReplicationIntervalSeconds,omitempty" json:"replicationIntervalSeconds,omitempty"`
+	ReplicationLink            []ReplicationLink `xml:"ReplicationLink,omitempty" json:"replicationLink,omitempty"`
+}
+
+// RetryDownload represents a retry download response
+type RetryDownload struct {
+	Resource string                `xml:"Resource,attr" json:"resource,omitempty"`
+	Response RetryDownloadResponse `xml:"Response" json:"response"`
+}
+
+// RetryDownloadResponse represents the response for retry download
+type RetryDownloadResponse struct {
+	Value string `xml:"Value,attr" json:"value"`
+	Text  string `xml:",chardata" json:"text"`
+}
+
+// Role represents a BES role
+type Role struct {
+	Resource                      string           `xml:"Resource,attr" json:"resource,omitempty"`
+	Name                          string           `xml:"Name,omitempty" json:"name,omitempty"`
+	ID                            int              `xml:"ID,omitempty" json:"id,omitempty"`
+	Description                   string           `xml:"Description,omitempty" json:"description,omitempty"`
+	MasterOperator                bool             `xml:"MasterOperator,omitempty" json:"masterOperator,omitempty"`
+	CustomContent                 bool             `xml:"CustomContent,omitempty" json:"customContent,omitempty"`
+	ShowOtherActions              bool             `xml:"ShowOtherActions,omitempty" json:"showOtherActions,omitempty"`
+	StopOtherActions              bool             `xml:"StopOtherActions,omitempty" json:"stopOtherActions,omitempty"`
+	CanCreateActions              bool             `xml:"CanCreateActions,omitempty" json:"canCreateActions,omitempty"`
+	PostActionBehaviorPrivilege   string           `xml:"PostActionBehaviorPrivilege,omitempty" json:"postActionBehaviorPrivilege,omitempty"`
+	ActionScriptCommandsPrivilege string           `xml:"ActionScriptCommandsPrivilege,omitempty" json:"actionScriptCommandsPrivilege,omitempty"`
+	CanSendMultipleRefresh        bool             `xml:"CanSendMultipleRefresh,omitempty" json:"canSendMultipleRefresh,omitempty"`
+	CanSubmitQueries              bool             `xml:"CanSubmitQueries,omitempty" json:"canSubmitQueries,omitempty"`
+	CanLock                       bool             `xml:"CanLock,omitempty" json:"canLock,omitempty"`
+	UnmanagedAssetPrivilege       string           `xml:"UnmanagedAssetPrivilege,omitempty" json:"unmanagedAssetPrivilege,omitempty"`
+	InterfaceLogins               *InterfaceLogins `xml:"InterfaceLogins,omitempty" json:"interfaceLogins,omitempty"`
+	Operators                     *RoleOperators   `xml:"Operators,omitempty" json:"operators,omitempty"`
+	LDAPGroups                    *RoleLDAPGroups  `xml:"LDAPGroups,omitempty" json:"ldapGroups,omitempty"`
+	Sites                         *RoleSites       `xml:"Sites,omitempty" json:"sites,omitempty"`
+	ComputerAssignments           *DynamicTarget   `xml:"ComputerAssignments,omitempty" json:"computerAssignments,omitempty"`
+}
+
+// InterfaceLogins represents interface login permissions
+type InterfaceLogins struct {
+	Console      bool               `xml:"Console,omitempty" json:"console,omitempty"`
+	WebUI        bool               `xml:"WebUI,omitempty" json:"webUi,omitempty"`
+	API          bool               `xml:"API,omitempty" json:"api,omitempty"`
+	Applications *ApplicationLogins `xml:"Applications,omitempty" json:"applications,omitempty"`
+}
+
+// ApplicationLogins represents application login permissions
+type ApplicationLogins struct {
+	Name []string `xml:"Name,omitempty" json:"name,omitempty"`
+}
+
+// RoleOperators represents operators assigned to a role
+type RoleOperators struct {
+	Explicit  []string `xml:"Explicit,omitempty" json:"explicit,omitempty"`
+	Inherited []string `xml:"Inherited,omitempty" json:"inherited,omitempty"`
+}
+
+// RoleLDAPGroups represents LDAP groups associated with a role
+type RoleLDAPGroups struct {
+	Group []LDAPGroup `xml:"Group" json:"group"`
+}
+
+// LDAPGroup represents an LDAP group
+type LDAPGroup struct {
+	Name     string `xml:"Name" json:"name"`
+	DN       string `xml:"DN" json:"dn"`
+	ServerID string `xml:"ServerID" json:"serverId"`
+}
+
+// RoleSites represents sites associated with a role
+type RoleSites struct {
+	CustomSite   []RoleCustomSite   `xml:"CustomSite,omitempty" json:"customSite,omitempty"`
+	ExternalSite []RoleExternalSite `xml:"ExternalSite,omitempty" json:"externalSite,omitempty"`
+}
+
+// RoleCustomSite represents a custom site in a role
+type RoleCustomSite struct {
+	Name       string `xml:"Name" json:"name"`
+	Permission string `xml:"Permission" json:"permission"`
+}
+
+// RoleExternalSite represents an external site in a role
+type RoleExternalSite struct {
+	Name       string `xml:"Name" json:"name"`
+	Permission string `xml:"Permission" json:"permission"`
+}
+
+// DynamicTarget represents dynamic targeting for computer assignments
+type DynamicTarget struct {
+	Match                 string                  `xml:"Match,attr" json:"match,omitempty"`
+	AllComputers          *struct{}               `xml:"AllComputers,omitempty" json:"allComputers,omitempty"`
+	ByActiveDirectory     []ByActiveDirectory     `xml:"ByActiveDirectory,omitempty" json:"byActiveDirectory,omitempty"`
+	ByRetrievedProperties []ByRetrievedProperties `xml:"ByRetrievedProperties,omitempty" json:"byRetrievedProperties,omitempty"`
+	ByGroup               []ByGroup               `xml:"ByGroup,omitempty" json:"byGroup,omitempty"`
+}
+
+// ByActiveDirectory represents targeting by Active Directory
+type ByActiveDirectory struct {
+	DistinguishedName string `xml:"DistinguishedName" json:"distinguishedName"`
+}
+
+// ByRetrievedProperties represents targeting by retrieved properties
+type ByRetrievedProperties struct {
+	Match     string          `xml:"Match,attr" json:"match,omitempty"`
+	Property  []PropertyValue `xml:"Property" json:"property"`
+	Relevance string          `xml:"Relevance,omitempty" json:"relevance,omitempty"`
+}
+
+// PropertyValue represents a property value for targeting
+type PropertyValue struct {
+	Name     string `xml:"Name,attr" json:"name"`
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Value    string `xml:"Value" json:"value"`
+}
+
+// ByGroup represents targeting by group
+type ByGroup struct {
+	Name     string `xml:"Name,attr" json:"name"`
+	Type     string `xml:"Type,attr" json:"type"`
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+}
+
+// SAMLProvider represents a SAML provider
+type SAMLProvider struct {
+	Resource           string `xml:"Resource,attr" json:"resource,omitempty"`
+	ID                 int    `xml:"ID,omitempty" json:"id,omitempty"`
+	Issuer             string `xml:"Issuer" json:"issuer"`
+	EntryPoint         string `xml:"EntryPoint" json:"entryPoint"`
+	IsDisabled         bool   `xml:"IsDisabled" json:"isDisabled"`
+	SigningCertificate string `xml:"SigningCertificate" json:"signingCertificate"`
+}
+
+// ServerBasedGroup represents a server-based computer group
+type ServerBasedGroup struct {
+	Resource        string          `xml:"Resource,attr" json:"resource,omitempty"`
+	Name            string          `xml:"Name" json:"name"`
+	RefreshInterval string          `xml:"RefreshInterval,omitempty" json:"refreshInterval,omitempty"`
+	MembershipRules MembershipRules `xml:"MembershipRules" json:"membershipRules"`
+}
+
+// MembershipRules represents membership rules for server-based groups
+type MembershipRules struct {
+	JoinByIntersection bool             `xml:"JoinByIntersection,attr" json:"joinByIntersection"`
+	MembershipRule     []MembershipRule `xml:"MembershipRule" json:"membershipRule"`
+}
+
+// MembershipRule represents a single membership rule
+type MembershipRule struct {
+	Comparison string `xml:"Comparison,attr" json:"comparison"`
+	PropertyID int    `xml:"PropertyID" json:"propertyId"`
+	SearchText string `xml:"SearchText" json:"searchText"`
+}
+
+// Session represents a BES session
+type Session struct {
+	Resource             string               `xml:"Resource,attr" json:"resource,omitempty"`
+	Operator             string               `xml:"Operator" json:"operator"`
+	UserID               int                  `xml:"UserID" json:"userId"`
+	EffectivePermissions EffectivePermissions `xml:"EffectivePermissions" json:"effectivePermissions"`
+}
+
+// EffectivePermissions represents effective permissions for a session
+type EffectivePermissions struct {
+	MasterOperator                bool            `xml:"MasterOperator" json:"masterOperator"`
+	CustomContent                 bool            `xml:"CustomContent" json:"customContent"`
+	ShowOtherActions              bool            `xml:"ShowOtherActions" json:"showOtherActions"`
+	StopOtherActions              bool            `xml:"StopOtherActions" json:"stopOtherActions"`
+	CanCreateActions              bool            `xml:"CanCreateActions" json:"canCreateActions"`
+	CanLock                       bool            `xml:"CanLock" json:"canLock"`
+	CanSendMultipleRefresh        bool            `xml:"CanSendMultipleRefresh" json:"canSendMultipleRefresh"`
+	CanSubmitQueries              bool            `xml:"CanSubmitQueries" json:"canSubmitQueries"`
+	PostActionBehaviorPrivilege   string          `xml:"PostActionBehaviorPrivilege" json:"postActionBehaviorPrivilege"`
+	ActionScriptCommandsPrivilege string          `xml:"ActionScriptCommandsPrivilege" json:"actionScriptCommandsPrivilege"`
+	UnmanagedAssetPrivilege       string          `xml:"UnmanagedAssetPrivilege" json:"unmanagedAssetPrivilege"`
+	InterfaceLogins               InterfaceLogins `xml:"InterfaceLogins" json:"interfaceLogins"`
+}
+
+// SingleAction represents a single action
+type SingleAction struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// Site represents a BES site
+type Site struct {
+	Resource     string   `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string   `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string   `xml:"Name,omitempty" json:"name,omitempty"`
+	DisplayName  string   `xml:"DisplayName,omitempty" json:"displayName,omitempty"`
+	Permission   []string `xml:"Permission,omitempty" json:"permission,omitempty"`
+}
+
+// SiteFile represents a file in a site
+type SiteFile struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+	FileSize     int    `xml:"FileSize,omitempty" json:"fileSize,omitempty"`
+	IsClientFile bool   `xml:"IsClientFile,omitempty" json:"isClientFile,omitempty"`
+}
+
+// SitePermission represents site permissions
+type SitePermission struct {
+	Resource   string                `xml:"Resource,attr" json:"resource,omitempty"`
+	Permission string                `xml:"Permission" json:"permission"`
+	Operator   *StringWithReference  `xml:"Operator,omitempty" json:"operator,omitempty"`
+	Role       *IntegerWithReference `xml:"Role,omitempty" json:"role,omitempty"`
+}
+
+// StringWithReference represents a string with a resource reference
+type StringWithReference struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Value    string `xml:",chardata" json:"value"`
+}
+
+// IntegerWithReference represents an integer with a resource reference
+type IntegerWithReference struct {
+	Resource string `xml:"Resource,attr" json:"resource,omitempty"`
+	Value    int    `xml:",chardata" json:"value"`
+}
+
+// SiteVersion represents a site version
+type SiteVersion struct {
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Value        int    `xml:",chardata" json:"value"`
+}
+
+// SystemOptions represents system options
+type SystemOptions struct {
+	Resource                string `xml:"Resource,attr" json:"resource"`
+	MinimumRefreshSeconds   int    `xml:"MinimumRefreshSeconds,omitempty" json:"minimumRefreshSeconds,omitempty"`
+	DefaultFixletVisibility string `xml:"DefaultFixletVisibility,omitempty" json:"defaultFixletVisibility,omitempty"`
+}
+
+// Task represents a BES task
+type Task struct {
+	Resource     string `xml:"Resource,attr" json:"resource,omitempty"`
+	LastModified string `xml:"LastModified,attr" json:"lastModified,omitempty"`
+	Name         string `xml:"Name,omitempty" json:"name,omitempty"`
+	ID           int    `xml:"ID,omitempty" json:"id,omitempty"`
+}
+
+// UnicastNotification represents a unicast notification
+type UnicastNotification struct {
+	Command    string `xml:"Command" json:"command"`
+	Arg1       string `xml:"Arg1,omitempty" json:"arg1,omitempty"`
+	Arg2       string `xml:"Arg2,omitempty" json:"arg2,omitempty"`
+	ComputerID []int  `xml:"ComputerID" json:"computerId"`
+}
+
+// WebReports represents web reports information
+type WebReports struct {
+	URL string `xml:"URL" json:"url"`
+}
+
+// WebReportsServers represents web reports servers
+type WebReportsServers struct {
+	WebReports []WebReportsServer `xml:"WebReports" json:"webReports"`
+}
+
+// WebReportsServer represents a web reports server
+type WebReportsServer struct {
+	URL      string `xml:"URL" json:"url"`
+	ID       int    `xml:"ID" json:"id"`
+	Priority int    `xml:"Priority" json:"priority"`
+}
+
+// WebReportsPriority represents web reports priority
+type WebReportsPriority struct {
+	Priority int `xml:"Priority" json:"priority"`
 }

@@ -121,31 +121,40 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 	
 	// Check if this public key matches any registered client
 	registrationMutex.RLock()
-	defer registrationMutex.RUnlock()
+	var matchedClientName string
+	var keyValid bool
 	
 	for _, client := range registeredClients {
 		if client.PublicKey == publicKeyString {
 			// Check if expired
 			if client.ExpiresAt != nil && time.Now().After(*client.ExpiresAt) {
 				log.Printf("Client %s key has expired", client.ClientName)
+				registrationMutex.RUnlock()
 				return "", false
 			}
 			
-			// Update last used time
-			go func(clientName string) {
-				registrationMutex.Lock()
-				defer registrationMutex.Unlock()
-				for i := range registeredClients {
-					if registeredClients[i].ClientName == clientName {
-						registeredClients[i].LastUsed = time.Now()
-						break
-					}
-				}
-				saveRegisteredClients() // Update persistent storage
-			}(client.ClientName)
-			
-			return client.ClientName, true
+			matchedClientName = client.ClientName
+			keyValid = true
+			break
 		}
+	}
+	registrationMutex.RUnlock()
+	
+	if keyValid {
+		// Update last used time after releasing read lock
+		go func(clientName string) {
+			registrationMutex.Lock()
+			defer registrationMutex.Unlock()
+			for i := range registeredClients {
+				if registeredClients[i].ClientName == clientName {
+					registeredClients[i].LastUsed = time.Now()
+					break
+				}
+			}
+			saveRegisteredClientsUnlocked() // Update persistent storage (already have lock)
+		}(matchedClientName)
+		
+		return matchedClientName, true
 	}
 	
 	log.Printf("No matching registered client found for provided key")
