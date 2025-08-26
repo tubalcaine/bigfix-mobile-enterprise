@@ -1,0 +1,145 @@
+# BEM Server Application Design
+
+## Overview
+
+The BEM (BigFix Enterprise Mobile) server is the main application component that provides a REST API gateway to BigFix servers. It handles authentication, caching, request routing, and format conversion between mobile clients and BigFix infrastructure.
+
+## Files Overview
+
+### Core Application Files
+
+| File | Purpose | Key Components |
+|------|---------|----------------|
+| **main.go** | Application entry point and CLI loop | Server startup, configuration loading, interactive commands |
+| **types.go** | Data structure definitions | Config structs, OTP/Client types, global state variables |
+| **endpoints.go** | HTTP API route handlers | REST endpoints for registration, authentication, queries |
+| **auth.go** | Authentication and session management | RSA key validation, cookie sessions, client authentication |
+| **registration.go** | Client registration logic | Registration file monitoring, OTP management, key generation |
+| **requests.go** | Registration request handling | Request file creation, filename sanitization |
+| **storage.go** | Persistent data management | JSON file I/O for OTPs, clients, backups |
+
+### Configuration & Data Files
+
+| File | Purpose | Format |
+|------|---------|--------|
+| **bem.json** | Server configuration | JSON config with server settings, BigFix connections |
+| **registered_clients.json** | Active client registrations | JSON array of registered clients with public keys |
+| **registration_otps.json** | Pending registration OTPs | JSON array of one-time keys awaiting consumption |
+| **registration_otps.json.bak.\*** | Automatic backups | Backup files created during OTP updates |
+
+### Directory Structure
+
+| Directory | Purpose | File Types |
+|-----------|---------|------------|
+| **registrations/** | Admin OTP drop folder | JSON files with completed registration requests |
+| **requests/** | Client request storage | JSON files from `/requestregistration` endpoint |
+
+## Key Components
+
+### 1. HTTP Server (`endpoints.go`)
+
+**Public Endpoints (no authentication):**
+- `GET /requestregistration?ClientName=X` - Request device registration
+- `POST /register` - Complete registration with OTP and get private key
+- `GET /otp?OneTimeKey=X` - Create browser admin session
+- `GET /help` - API documentation
+
+**Protected Endpoints (require authentication):**
+- `GET /urls?url=X` - Cached BigFix query responses
+- `GET /servers` - List available BigFix servers
+- `GET /summary` - Cache usage statistics
+- `GET /cache` - Raw cache contents
+
+### 2. Authentication System (`auth.go`)
+
+**Client Key Authentication:**
+- RSA private key validation
+- Authorization header: `Authorization: Client <base64_private_key>`
+- Automatic key expiration handling
+- Last-used time tracking
+
+**Browser Session Authentication:**
+- Cookie-based sessions (`bem_session`)
+- 8-hour session lifetime
+- Session token generation and validation
+
+### 3. Registration Management (`registration.go`, `requests.go`)
+
+**Registration Flow:**
+1. Client calls `/requestregistration` → creates request file
+2. Admin processes request → moves to `registrations/` folder
+3. File watcher detects new registration → loads OTPs into memory
+4. Client calls `/register` with OTP → receives private key
+
+**File Monitoring:**
+- Real-time monitoring of `registrations/` directory
+- Automatic processing and deletion of registration files
+- Goroutine-based event handling with proper cleanup
+
+### 4. Data Persistence (`storage.go`)
+
+**Features:**
+- Automatic backup creation (`.bak.N` files)
+- Atomic file operations (write to temp, then rename)
+- JSON marshaling with pretty formatting
+- Error handling and recovery
+
+**Data Types:**
+- `registrationOTPs []RegistrationOTP` - Pending registrations
+- `registeredClients []RegisteredClient` - Active clients
+- `activeSessions map[string]time.Time` - Browser sessions
+
+## Interactive CLI Commands
+
+Access via the server console after starting:
+
+| Command | Description | Output |
+|---------|-------------|--------|
+| `cache` | Display cached BigFix data | Lists all cached URLs by server |
+| `summary` | Show cache statistics | Item counts, sizes, expiration info |
+| `write` | Export cache to file | Prompts for filename, writes JSON |
+| `makekey` | Generate RSA key pair | Creates `.key` and `.pub` files |
+| `registrations` | Show registration status | Lists OTPs, clients, and sessions |
+| `help` | Display available commands | Command descriptions |
+| `exit` | Terminate server | Graceful shutdown |
+| `<url>` | Query specific URL | Retrieve and display cached response |
+
+## Configuration (`bem.json`)
+
+```json
+{
+  "app_cache_timeout": 3600,
+  "listen_port": 17967,
+  "cert_path": "/path/to/cert.crt",
+  "key_path": "/path/to/private.key",
+  "keysize": 2048,
+  "registration_dir": "./registrations",
+  "requests_dir": "./requests", 
+  "registration_data_dir": "./data",
+  "bigfix_servers": [
+    {
+      "url": "https://bigfix-server:52311",
+      "username": "console_user",
+      "password": "password",
+      "maxage": 1800,
+      "poolsize": 5
+    }
+  ]
+}
+```
+
+## Security Features
+
+- **RSA Key Authentication**: 2048-bit keys with configurable lifespan
+- **Request Sanitization**: Filename security, directory traversal prevention
+- **Session Management**: Secure cookie handling, automatic cleanup
+- **TLS Support**: Optional HTTPS with certificate configuration
+- **Input Validation**: Parameter validation, error handling
+
+## Development Notes
+
+- **Thread Safety**: Uses `sync.RWMutex` for concurrent access
+- **Error Handling**: Comprehensive error logging and user feedback  
+- **Graceful Shutdown**: Proper resource cleanup on exit
+- **File Monitoring**: Real-time registration processing with goroutine management
+- **Backup Strategy**: Automatic data backups prevent data loss
