@@ -285,18 +285,38 @@ func handleServersEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 	if !requireAuth(c) {
 		return
 	}
-	
-	var serverNames []string
+
+	type ServerInfo struct {
+		Name   string  `json:"name"`
+		RAMBytes int64   `json:"ram_bytes"`
+		RAMKB    float64 `json:"ram_kb"`
+		RAMMB    float64 `json:"ram_mb"`
+	}
+
+	var servers []ServerInfo
 
 	cache.ServerCache.Range(func(key, value interface{}) bool {
 		server := value.(*bfrest.BigFixServerCache)
-		serverNames = append(serverNames, server.ServerName)
+		var ramBytes int64
+
+		server.CacheMap.Range(func(key, value interface{}) bool {
+			item := value.(*bfrest.CacheItem)
+			ramBytes += int64(len(item.Json))
+			return true
+		})
+
+		servers = append(servers, ServerInfo{
+			Name:     server.ServerName,
+			RAMBytes: ramBytes,
+			RAMKB:    float64(ramBytes) / 1024.0,
+			RAMMB:    float64(ramBytes) / (1024.0 * 1024.0),
+		})
 		return true
 	})
 
 	c.JSON(200, gin.H{
-		"ServerNames":     serverNames,
-		"NumberOfServers": len(serverNames),
+		"servers":         servers,
+		"number_of_servers": len(servers),
 	})
 }
 
@@ -330,14 +350,18 @@ func handleSummaryEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		serverSummary["total_items"] = count
 		serverSummary["expired_items"] = expired
 		serverSummary["current_items"] = current
-		serverSummary["serverSize"] = serverSize
+		serverSummary["ram_bytes"] = serverSize
+		serverSummary["ram_kb"] = float64(serverSize) / 1024.0
+		serverSummary["ram_mb"] = float64(serverSize) / (1024.0 * 1024.0)
 		summary[server.ServerName] = serverSummary
 		totalSize += serverSize
 
 		return true
 	})
 
-	summary["totalSize"] = totalSize
+	summary["total_ram_bytes"] = totalSize
+	summary["total_ram_kb"] = float64(totalSize) / 1024.0
+	summary["total_ram_mb"] = float64(totalSize) / (1024.0 * 1024.0)
 	c.JSON(200, summary)
 }
 

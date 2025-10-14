@@ -242,9 +242,11 @@ func main() {
 				server := value.(*bfrest.BigFixServerCache)
 				fmt.Printf("For server %s\n\tWe have:\n", server.ServerName)
 				count, current, expired := 0, 0, 0
+				var ramBytes int64
 				server.CacheMap.Range(func(key, value interface{}) bool {
 					v := value.(*bfrest.CacheItem)
 					count++
+					ramBytes += int64(len(v.Json))
 					if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
 						expired++
 					} else {
@@ -254,7 +256,10 @@ func main() {
 					return true
 				})
 
-				fmt.Printf("\t\t%d total items, %d expired, %d current\n\n", count, expired, current)
+				ramKB := float64(ramBytes) / 1024.0
+				ramMB := ramKB / 1024.0
+				fmt.Printf("\t\t%d total items, %d expired, %d current\n", count, expired, current)
+				fmt.Printf("\t\tRAM usage: %.2f KB (%.2f MB)\n\n", ramKB, ramMB)
 
 				return true
 			})
