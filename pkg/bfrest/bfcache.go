@@ -202,7 +202,9 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	}
 
 	// Check if cache item needs refresh: Json is empty (cleared by GC) or expired
-	if cm.Json == "" || time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge) {
+	needsRefresh := cm.Json == "" || time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge)
+
+	if needsRefresh {
 		// Fetch fresh data from server
 		newItem, err := retrieveBigFixData(url, sc)
 		if err != nil {
@@ -211,26 +213,33 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 
 		// Compare content hashes to detect if data has changed
 		if cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash {
-			// Content unchanged - extend the cache lifetime
+			// Content unchanged - restore Json (if it was cleared) and extend MaxAge
 			newMaxAge := cm.MaxAge + cm.BaseMaxAge
 			if newMaxAge > cache.MaxCacheLifetime {
 				newMaxAge = cache.MaxCacheLifetime
 			}
 
-			// Create updated item with extended MaxAge but same content hash
+			// Create updated item with extended MaxAge, restored Json, and same content hash
 			updatedItem := &CacheItem{
 				Timestamp:   time.Now().Unix(),
-				Json:        newItem.Json, // Use fresh Json data
+				Json:        newItem.Json,
 				MaxAge:      newMaxAge,
 				BaseMaxAge:  cm.BaseMaxAge,
-				ContentHash: cm.ContentHash,
+				ContentHash: cm.ContentHash, // Keep old hash since content matches
 			}
 			sc.CacheMap.Store(url, updatedItem)
 			return updatedItem, nil
 		} else {
-			// Content changed or first time - store with BaseMaxAge
-			sc.CacheMap.Store(url, newItem)
-			return newItem, nil
+			// Content changed - store new data with new hash and reset to BaseMaxAge
+			updatedItem := &CacheItem{
+				Timestamp:   time.Now().Unix(),
+				Json:        newItem.Json,
+				MaxAge:      cm.BaseMaxAge, // Reset to base, not newItem.MaxAge
+				BaseMaxAge:  cm.BaseMaxAge,
+				ContentHash: newItem.ContentHash, // Update to new hash
+			}
+			sc.CacheMap.Store(url, updatedItem)
+			return updatedItem, nil
 		}
 	}
 
