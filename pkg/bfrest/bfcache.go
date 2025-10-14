@@ -206,15 +206,26 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	isExpired := time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge)
 	needsRefresh := isEmpty || isExpired
 
+	fmt.Fprintf(os.Stderr, "\n=== CACHE CHECK for %s ===\n", url)
+	fmt.Fprintf(os.Stderr, "  Current state: isEmpty=%v, isExpired=%v, needsRefresh=%v\n", isEmpty, isExpired, needsRefresh)
+	fmt.Fprintf(os.Stderr, "  Current values: Timestamp=%d, MaxAge=%d, BaseMaxAge=%d, JSON length=%d, Hash=%s\n",
+		cm.Timestamp, cm.MaxAge, cm.BaseMaxAge, len(cm.Json), cm.ContentHash[:8])
+
 	if needsRefresh {
+		fmt.Fprintf(os.Stderr, "  --> Refreshing from server...\n")
+
 		// Fetch fresh data from server
 		newItem, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
 		}
 
+		fmt.Fprintf(os.Stderr, "  Fresh data retrieved: JSON length=%d, Hash=%s\n", len(newItem.Json), newItem.ContentHash[:8])
+
 		// Determine if content has changed by comparing hashes
 		hashMatches := cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash
+		fmt.Fprintf(os.Stderr, "  Hash comparison: old=%s, new=%s, matches=%v\n",
+			cm.ContentHash[:8], newItem.ContentHash[:8], hashMatches)
 
 		var updatedItem *CacheItem
 
@@ -222,8 +233,14 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 			// Content unchanged - restore Json (if it was cleared) and extend MaxAge
 			newMaxAge := cm.MaxAge + cm.BaseMaxAge
 			if newMaxAge > cache.MaxCacheLifetime {
+				fmt.Fprintf(os.Stderr, "  MaxAge extension capped: would be %d, capping to %d (MaxCacheLifetime)\n",
+					newMaxAge, cache.MaxCacheLifetime)
 				newMaxAge = cache.MaxCacheLifetime
 			}
+
+			fmt.Fprintf(os.Stderr, "  HASH MATCHED - Content unchanged!\n")
+			fmt.Fprintf(os.Stderr, "    Extending MaxAge: %d + %d = %d\n", cm.MaxAge, cm.BaseMaxAge, newMaxAge)
+			fmt.Fprintf(os.Stderr, "    Restoring JSON: %d bytes\n", len(newItem.Json))
 
 			// Create updated item with extended MaxAge, restored Json, and same content hash
 			updatedItem = &CacheItem{
@@ -233,9 +250,18 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: cm.ContentHash, // Keep old hash since content matches
 			}
-			fmt.Fprintf(os.Stderr, "DEBUG: Hash matched for %s - extending MaxAge from %d to %d, restoring JSON (%d bytes)\n",
-				url, cm.MaxAge, newMaxAge, len(newItem.Json))
+
+			fmt.Fprintf(os.Stderr, "  Values to be stored:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d (now)\n", updatedItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", updatedItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", updatedItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(updatedItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", updatedItem.ContentHash[:8])
 		} else {
+			fmt.Fprintf(os.Stderr, "  HASH CHANGED - Content has changed!\n")
+			fmt.Fprintf(os.Stderr, "    Resetting MaxAge to BaseMaxAge: %d\n", cm.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    Updating hash: %s -> %s\n", cm.ContentHash[:8], newItem.ContentHash[:8])
+
 			// Content changed - store new data with new hash and reset to BaseMaxAge
 			updatedItem = &CacheItem{
 				Timestamp:   time.Now().Unix(),
@@ -244,16 +270,40 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: newItem.ContentHash, // Update to new hash
 			}
-			fmt.Fprintf(os.Stderr, "DEBUG: Hash changed for %s - resetting MaxAge to %d, updating hash from %s to %s\n",
-				url, cm.BaseMaxAge, cm.ContentHash[:8], newItem.ContentHash[:8])
+
+			fmt.Fprintf(os.Stderr, "  Values to be stored:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d (now)\n", updatedItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", updatedItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", updatedItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(updatedItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", updatedItem.ContentHash[:8])
 		}
 
 		// Store the updated item back to cache
+		fmt.Fprintf(os.Stderr, "  --> Calling CacheMap.Store() to save updated item...\n")
 		sc.CacheMap.Store(url, updatedItem)
-		fmt.Fprintf(os.Stderr, "DEBUG: Stored updated item for %s - MaxAge: %d, JSON length: %d, Hash: %s\n",
-			url, updatedItem.MaxAge, len(updatedItem.Json), updatedItem.ContentHash[:8])
+		fmt.Fprintf(os.Stderr, "  --> Store completed successfully!\n")
+
+		// Verify the store worked by reading it back
+		verifyValue, verifyOk := sc.CacheMap.Load(url)
+		if verifyOk {
+			verifyItem := verifyValue.(*CacheItem)
+			fmt.Fprintf(os.Stderr, "  VERIFICATION - Read back from cache:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d\n", verifyItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", verifyItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", verifyItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(verifyItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", verifyItem.ContentHash[:8])
+		} else {
+			fmt.Fprintf(os.Stderr, "  ERROR: Failed to verify - could not load item back from cache!\n")
+		}
+
+		fmt.Fprintf(os.Stderr, "=== END CACHE CHECK ===\n\n")
 		return updatedItem, nil
 	}
+
+	fmt.Fprintf(os.Stderr, "  --> Cache hit - returning existing item\n")
+	fmt.Fprintf(os.Stderr, "=== END CACHE CHECK ===\n\n")
 
 	// Cache hit - return existing valid item
 	return cm, nil
