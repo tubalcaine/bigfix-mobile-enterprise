@@ -204,14 +204,18 @@ func main() {
 				server := value.(*bfrest.BigFixServerCache)
 				serverData := make(map[string]interface{})
 				serverData["ServerName"] = server.ServerName
+				serverData["MaxAge"] = server.MaxAge
 				serverData["CacheItems"] = make([]map[string]interface{}, 0)
 
 				server.CacheMap.Range(func(key, value interface{}) bool {
 					cacheItem := value.(*bfrest.CacheItem)
 					itemData := make(map[string]interface{})
-					itemData["Key"] = key.(string)
-					itemData["Json"] = cacheItem.Json
+					itemData["URL"] = key.(string)
 					itemData["Timestamp"] = cacheItem.Timestamp
+					itemData["MaxAge"] = cacheItem.MaxAge
+					itemData["BaseMaxAge"] = cacheItem.BaseMaxAge
+					itemData["ContentHash"] = cacheItem.ContentHash
+					itemData["Json"] = cacheItem.Json
 
 					serverData["CacheItems"] = append(serverData["CacheItems"].([]map[string]interface{}), itemData)
 
