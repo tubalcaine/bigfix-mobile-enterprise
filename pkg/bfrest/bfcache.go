@@ -233,6 +233,8 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: cm.ContentHash, // Keep old hash since content matches
 			}
+			fmt.Fprintf(os.Stderr, "DEBUG: Hash matched for %s - extending MaxAge from %d to %d, restoring JSON (%d bytes)\n",
+				url, cm.MaxAge, newMaxAge, len(newItem.Json))
 		} else {
 			// Content changed - store new data with new hash and reset to BaseMaxAge
 			updatedItem = &CacheItem{
@@ -242,10 +244,14 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: newItem.ContentHash, // Update to new hash
 			}
+			fmt.Fprintf(os.Stderr, "DEBUG: Hash changed for %s - resetting MaxAge to %d, updating hash from %s to %s\n",
+				url, cm.BaseMaxAge, cm.ContentHash[:8], newItem.ContentHash[:8])
 		}
 
 		// Store the updated item back to cache
 		sc.CacheMap.Store(url, updatedItem)
+		fmt.Fprintf(os.Stderr, "DEBUG: Stored updated item for %s - MaxAge: %d, JSON length: %d, Hash: %s\n",
+			url, updatedItem.MaxAge, len(updatedItem.Json), updatedItem.ContentHash[:8])
 		return updatedItem, nil
 	}
 
