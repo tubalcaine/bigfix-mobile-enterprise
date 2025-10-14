@@ -9,17 +9,23 @@ import (
 
 func TestGetCache(t *testing.T) {
 	bfrest.ResetCache()
-	// Test with non-zero maxAgeSeconds
-	cache := bfrest.GetCache(500)
+	// Test with non-zero maxAgeSeconds and maxCacheLifetime
+	cache := bfrest.GetCache(500, 7200)
 	if cache.MaxAge != 500 {
 		t.Errorf("Expected maxAge to be %v, got %v", 500, cache.MaxAge)
 	}
+	if cache.MaxCacheLifetime != 7200 {
+		t.Errorf("Expected maxCacheLifetime to be %v, got %v", 7200, cache.MaxCacheLifetime)
+	}
 
 	bfrest.ResetCache()
-	// Test with zero maxAgeSeconds
-	cache = bfrest.GetCache(0)
+	// Test with zero values (should use defaults)
+	cache = bfrest.GetCache(0, 0)
 	if cache.MaxAge != 300 {
 		t.Errorf("Expected maxAge to be %v, got %v", 300, cache.MaxAge)
+	}
+	if cache.MaxCacheLifetime != 86400 {
+		t.Errorf("Expected maxCacheLifetime to be %v, got %v", 86400, cache.MaxCacheLifetime)
 	}
 
 	bfrest.ResetCache()
@@ -27,8 +33,9 @@ func TestGetCache(t *testing.T) {
 
 func TestAddServer(t *testing.T) {
 	cache := &bfrest.BigFixCache{
-		ServerCache: &sync.Map{},
-		MaxAge:      300,
+		ServerCache:      &sync.Map{},
+		MaxAge:           300,
+		MaxCacheLifetime: 86400,
 	}
 
 	// Test adding a new server

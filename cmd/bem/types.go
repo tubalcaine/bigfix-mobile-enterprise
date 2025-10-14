@@ -13,15 +13,17 @@ var (
 
 // Configuration structures
 type Config struct {
-	AppCacheTimeout     uint64         `json:"app_cache_timeout"`
-	BigFixServers       []BigFixServer `json:"bigfix_servers"`
-	ListenPort          int            `json:"listen_port"`
-	CertPath            string         `json:"cert_path"`
-	KeyPath             string         `json:"key_path"`
-	KeySize             int            `json:"keysize"`
-	RegistrationDir     string         `json:"registration_dir"`
-	RequestsDir         string         `json:"requests_dir"`
-	RegistrationDataDir string         `json:"registration_data_dir"`
+	AppCacheTimeout          uint64         `json:"app_cache_timeout"`
+	BigFixServers            []BigFixServer `json:"bigfix_servers"`
+	ListenPort               int            `json:"listen_port"`
+	CertPath                 string         `json:"cert_path"`
+	KeyPath                  string         `json:"key_path"`
+	KeySize                  int            `json:"keysize"`
+	RegistrationDir          string         `json:"registration_dir"`
+	RequestsDir              string         `json:"requests_dir"`
+	RegistrationDataDir      string         `json:"registration_data_dir"`
+	GarbageCollectorInterval uint64         `json:"garbage_collector_interval"` // seconds between GC sweeps, default 15
+	MaxCacheLifetime         uint64         `json:"max_cache_lifetime"`          // maximum cache lifetime in seconds, default 86400 (24 hours)
 }
 
 type BigFixServer struct {

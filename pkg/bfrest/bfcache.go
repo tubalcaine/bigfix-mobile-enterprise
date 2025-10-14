@@ -5,6 +5,8 @@ package bfrest
 // and populate the cache with commonly accessed data.
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -19,8 +21,9 @@ import (
 // It is a singleton that is accessed by multiple goroutines.
 // It contains a map of BigFixServerCache instances.
 type BigFixCache struct {
-	ServerCache *sync.Map
-	MaxAge      uint64
+	ServerCache      *sync.Map
+	MaxAge           uint64
+	MaxCacheLifetime uint64 // Maximum lifetime for any cache item in seconds
 }
 
 // BigFixServerCache represents a cache for storing one BigFix
@@ -38,30 +41,37 @@ type BigFixServerCache struct {
 // from a single BigFix server. This is stored in the CacheMap of
 // a BigFixServerCache.
 // Timestamp represents the time when the cache item was created.
-// RawXML stores the raw XML data associated with the cache item.
-// -- In the future we may discard this data after unmarshalling it.
 // Json stores the JSON representation of the cache item.
+// MaxAge stores the cache expiration time in seconds for this item (can grow dynamically).
+// BaseMaxAge stores the original MaxAge value from the server for increment calculations.
+// ContentHash stores the MD5 hash of the raw data from the server.
 type CacheItem struct {
-	Timestamp int64
-	RawXML    string
-	Json      string
+	Timestamp   int64
+	Json        string
+	MaxAge      uint64
+	BaseMaxAge  uint64
+	ContentHash string
 }
 
 var cacheInstance *BigFixCache
 var cacheMu = &sync.Mutex{}
 
 // GetCache is a singleton cache constructor
-func GetCache(maxAgeSeconds uint64) *BigFixCache {
+func GetCache(maxAgeSeconds uint64, maxCacheLifetime uint64) *BigFixCache {
 	cacheMu.Lock()
 	if maxAgeSeconds == 0 {
 		maxAgeSeconds = 300
+	}
+	if maxCacheLifetime == 0 {
+		maxCacheLifetime = 86400 // Default to 24 hours
 	}
 
 	defer cacheMu.Unlock()
 	if cacheInstance == nil {
 		cacheInstance = &BigFixCache{
-			ServerCache: &sync.Map{},
-			MaxAge:      maxAgeSeconds,
+			ServerCache:      &sync.Map{},
+			MaxAge:           maxAgeSeconds,
+			MaxCacheLifetime: maxCacheLifetime,
 		}
 	}
 
@@ -148,8 +158,10 @@ func (cache *BigFixCache) silentGet(url string) {
 
 // Get retrieves a cache item for the given URL from the BigFixCache.
 // If the cache item is found and not expired, it is returned as a *CacheItem.
-// If the cache item is not found or expired, it is retrieved from the server
-// using the retrieveBigFixData function and stored in the cache before being returned.
+// If the cache item is not found, expired, or has empty Json, it is retrieved from the server.
+// When fetching fresh data, the MD5 hash is compared to detect changes:
+// - If unchanged: MaxAge is extended (up to MaxCacheLifetime) for efficient caching of stable content
+// - If changed: MaxAge resets to BaseMaxAge to ensure fresh content is refreshed regularly
 // If the server cache does not exist for the given URL, an error is returned.
 func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	baseURL := getBaseUrl(url)
@@ -173,7 +185,7 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	var cm *CacheItem
 
 	if !ok {
-		// Cache miss
+		// Cache miss - first time accessing this URL
 
 		cm, err := retrieveBigFixData(url, sc)
 		if err != nil {
@@ -189,17 +201,40 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		return nil, fmt.Errorf("type failure loading cache item for %s", url)
 	}
 
-	if time.Now().Unix()-cm.Timestamp > int64(sc.MaxAge) {
-		// Cache expired
-		cm, err := retrieveBigFixData(url, sc)
+	// Check if cache item needs refresh: Json is empty (cleared by GC) or expired
+	if cm.Json == "" || time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge) {
+		// Fetch fresh data from server
+		newItem, err := retrieveBigFixData(url, sc)
 		if err != nil {
 			return nil, err
 		}
-		sc.CacheMap.Store(url, cm)
-		return cm, nil
+
+		// Compare content hashes to detect if data has changed
+		if cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash {
+			// Content unchanged - extend the cache lifetime
+			newMaxAge := cm.MaxAge + cm.BaseMaxAge
+			if newMaxAge > cache.MaxCacheLifetime {
+				newMaxAge = cache.MaxCacheLifetime
+			}
+
+			// Create updated item with extended MaxAge but same content hash
+			updatedItem := &CacheItem{
+				Timestamp:   time.Now().Unix(),
+				Json:        newItem.Json, // Use fresh Json data
+				MaxAge:      newMaxAge,
+				BaseMaxAge:  cm.BaseMaxAge,
+				ContentHash: cm.ContentHash,
+			}
+			sc.CacheMap.Store(url, updatedItem)
+			return updatedItem, nil
+		} else {
+			// Content changed or first time - store with BaseMaxAge
+			sc.CacheMap.Store(url, newItem)
+			return newItem, nil
+		}
 	}
 
-	// Cache hit
+	// Cache hit - return existing valid item
 	return cm, nil
 }
 
@@ -233,11 +268,16 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 			
 			if outputFormat == "json" || formatParam == "json" {
 				// For JSON format requests, pass through the JSON response directly
+				hash := md5.Sum([]byte(rawResponse))
+				contentHash := hex.EncodeToString(hash[:])
+
 				sc.cpool.Release(conn)
 				return &CacheItem{
-					Timestamp: time.Now().Unix(),
-					RawXML:    rawResponse, // Still called RawXML for compatibility, but contains JSON
-					Json:      rawResponse,
+					Timestamp:   time.Now().Unix(),
+					Json:        rawResponse,
+					MaxAge:      sc.MaxAge,
+					BaseMaxAge:  sc.MaxAge,
+					ContentHash: contentHash,
 				}, nil
 			}
 		}
@@ -280,11 +320,16 @@ fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s
 
 	jStr := string(jsonValue)
 
+	hash := md5.Sum([]byte(rawResponse))
+	contentHash := hex.EncodeToString(hash[:])
+
 	sc.cpool.Release(conn)
 	return &CacheItem{
-		Timestamp: time.Now().Unix(),
-		RawXML:    rawResponse,
-		Json:      jStr,
+		Timestamp:   time.Now().Unix(),
+		Json:        jStr,
+		MaxAge:      sc.MaxAge,
+		BaseMaxAge:  sc.MaxAge,
+		ContentHash: contentHash,
 	}, nil
 }
 
@@ -302,7 +347,7 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 		return err
 	}
 
-	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	err = json.Unmarshal(([]byte)(result.Json), &besapi)
 	if err != nil {
 		return err
 	}
@@ -318,7 +363,7 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 		return err
 	}
 
-	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	err = json.Unmarshal(([]byte)(result.Json), &besapi)
 	if err != nil {
 		return err
 	}
@@ -334,7 +379,7 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 		return err
 	}
 
-	err = xml.Unmarshal(([]byte)(result.RawXML), &besapi)
+	err = json.Unmarshal(([]byte)(result.Json), &besapi)
 	if err != nil {
 		return err
 	}
@@ -363,4 +408,56 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 	}
 
 	return nil
+}
+
+// StartGarbageCollector starts a background goroutine that periodically sweeps the cache
+// and frees memory by clearing Json data from expired cache items.
+// The interval parameter specifies how often the garbage collector runs in seconds.
+// This function should be called once after the cache is initialized with servers.
+func (cache *BigFixCache) StartGarbageCollector(interval uint64) {
+	if interval == 0 {
+		interval = 15 // Default to 15 seconds
+	}
+
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+
+	go func() {
+		for range ticker.C {
+			cache.sweepExpiredItems()
+		}
+	}()
+}
+
+// sweepExpiredItems iterates through all cache items and clears Json data from expired items
+// to free memory. It replaces expired CacheItems with new ones that have empty Json but
+// preserve other metadata for potential reuse.
+func (cache *BigFixCache) sweepExpiredItems() {
+	now := time.Now().Unix()
+
+	cache.ServerCache.Range(func(key, value interface{}) bool {
+		server := value.(*BigFixServerCache)
+
+		server.CacheMap.Range(func(urlKey, itemValue interface{}) bool {
+			item := itemValue.(*CacheItem)
+
+			// Check if item is expired
+			if now-item.Timestamp > int64(item.MaxAge) {
+				// Create a new CacheItem with empty Json but preserve other fields
+				clearedItem := &CacheItem{
+					Timestamp:   item.Timestamp,
+					Json:        "", // Clear the JSON data to free memory
+					MaxAge:      item.MaxAge,
+					BaseMaxAge:  item.BaseMaxAge,
+					ContentHash: item.ContentHash,
+				}
+
+				// Replace the entire CacheItem for thread safety
+				server.CacheMap.Store(urlKey, clearedItem)
+			}
+
+			return true
+		})
+
+		return true
+	})
 }

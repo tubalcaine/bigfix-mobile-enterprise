@@ -317,7 +317,7 @@ func handleSummaryEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		server.CacheMap.Range(func(key, value interface{}) bool {
 			v := value.(*bfrest.CacheItem)
 			count++
-			itemSize := int64(len(v.Json) + len(v.RawXML))
+			itemSize := int64(len(v.Json))
 			serverSize += itemSize
 			if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
 				expired++

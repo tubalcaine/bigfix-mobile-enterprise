@@ -73,13 +73,15 @@ func main() {
 		}
 	}()
 
-	cache := bfrest.
-		GetCache(config.AppCacheTimeout)
+	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
 
 	for _, server := range config.BigFixServers {
 		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize)
 		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
 	}
+
+	// Start the garbage collector after cache is initialized with servers
+	cache.StartGarbageCollector(config.GarbageCollectorInterval)
 
 	r := gin.Default()
 
@@ -209,7 +211,6 @@ func main() {
 					itemData := make(map[string]interface{})
 					itemData["Key"] = key.(string)
 					itemData["Json"] = cacheItem.Json
-					itemData["RawXML"] = cacheItem.RawXML
 					itemData["Timestamp"] = cacheItem.Timestamp
 
 					serverData["CacheItems"] = append(serverData["CacheItems"].([]map[string]interface{}), itemData)
