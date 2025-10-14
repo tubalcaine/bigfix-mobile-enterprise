@@ -263,7 +263,7 @@ func main() {
 
 		if query == "registrations" {
 			fmt.Println("\n=== REGISTRATION STATUS ===")
-			
+
 			// Registration Requests (OTPs)
 			registrationMutex.RLock()
 			fmt.Printf("\nRegistration Requests (%d):\n", len(registrationOTPs))
@@ -281,8 +281,8 @@ func main() {
 					fmt.Println()
 				}
 			}
-			
-			// Registered Clients  
+
+			// Registered Clients
 			fmt.Printf("Registered Clients (%d):\n", len(registeredClients))
 			if len(registeredClients) == 0 {
 				fmt.Println("  (none)")
@@ -301,7 +301,7 @@ func main() {
 				}
 			}
 			registrationMutex.RUnlock()
-			
+
 			// Active Sessions
 			sessionMutex.RLock()
 			fmt.Printf("Active OTP Sessions (%d):\n", len(activeSessions))
@@ -323,7 +323,17 @@ func main() {
 				}
 			}
 			sessionMutex.RUnlock()
-			
+
+			continue
+		}
+
+		if query == "reload" {
+			fmt.Println("Reloading cache with core types from all servers...")
+			for _, server := range config.BigFixServers {
+				go cache.PopulateCoreTypes(server.URL, server.MaxAge)
+				fmt.Printf("  Started cache population for: %s\n", server.URL)
+			}
+			fmt.Println("Cache reload initiated for all servers.")
 			continue
 		}
 
@@ -334,6 +344,7 @@ func main() {
 			fmt.Println("\twrite - write the cache to a file")
 			fmt.Println("\tmakekey - generate a new RSA key pair for client authentication")
 			fmt.Println("\tregistrations - display registration requests, clients, and sessions")
+			fmt.Println("\treload - re-populate cache with core types from all servers")
 			fmt.Println("\thelp - display this help")
 			fmt.Println("\texit - terminate the program")
 			fmt.Println("\t<url> - retrieve the url from the cache")
