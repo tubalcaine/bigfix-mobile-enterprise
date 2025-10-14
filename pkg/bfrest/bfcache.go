@@ -202,7 +202,9 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	}
 
 	// Check if cache item needs refresh: Json is empty (cleared by GC) or expired
-	needsRefresh := cm.Json == "" || time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge)
+	isEmpty := cm.Json == ""
+	isExpired := time.Now().Unix()-cm.Timestamp > int64(cm.MaxAge)
+	needsRefresh := isEmpty || isExpired
 
 	if needsRefresh {
 		// Fetch fresh data from server
@@ -211,8 +213,12 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 			return nil, err
 		}
 
-		// Compare content hashes to detect if data has changed
-		if cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash {
+		// Determine if content has changed by comparing hashes
+		hashMatches := cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash
+
+		var updatedItem *CacheItem
+
+		if hashMatches {
 			// Content unchanged - restore Json (if it was cleared) and extend MaxAge
 			newMaxAge := cm.MaxAge + cm.BaseMaxAge
 			if newMaxAge > cache.MaxCacheLifetime {
@@ -220,27 +226,27 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 			}
 
 			// Create updated item with extended MaxAge, restored Json, and same content hash
-			updatedItem := &CacheItem{
+			updatedItem = &CacheItem{
 				Timestamp:   time.Now().Unix(),
 				Json:        newItem.Json,
 				MaxAge:      newMaxAge,
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: cm.ContentHash, // Keep old hash since content matches
 			}
-			sc.CacheMap.Store(url, updatedItem)
-			return updatedItem, nil
 		} else {
 			// Content changed - store new data with new hash and reset to BaseMaxAge
-			updatedItem := &CacheItem{
+			updatedItem = &CacheItem{
 				Timestamp:   time.Now().Unix(),
 				Json:        newItem.Json,
 				MaxAge:      cm.BaseMaxAge, // Reset to base, not newItem.MaxAge
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: newItem.ContentHash, // Update to new hash
 			}
-			sc.CacheMap.Store(url, updatedItem)
-			return updatedItem, nil
 		}
+
+		// Store the updated item back to cache
+		sc.CacheMap.Store(url, updatedItem)
+		return updatedItem, nil
 	}
 
 	// Cache hit - return existing valid item
