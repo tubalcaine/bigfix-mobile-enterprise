@@ -20,14 +20,14 @@ import (
 
 func processRegistrationFile(filename string) {
 	log.Printf("Processing registration file: %s", filename)
-	
+
 	// Read the file
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		log.Printf("Error reading registration file %s: %v", filename, err)
 		return
 	}
-	
+
 	// Parse JSON array of registration OTPs
 	var newOTPs []RegistrationOTP
 	if err := json.Unmarshal(data, &newOTPs); err != nil {
@@ -50,7 +50,7 @@ func processRegistrationFile(filename string) {
 		log.Printf("Error saving registration OTPs: %v", err)
 		return
 	}
-	
+
 	// Remove the processed file
 	if err := os.Remove(filename); err != nil {
 		log.Printf("Warning: Could not remove processed registration file %s: %v", filename, err)
@@ -64,13 +64,13 @@ func watchRegistrationDirectory(dir string) {
 		log.Println("No registration directory configured, skipping file monitoring")
 		return
 	}
-	
+
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		log.Printf("Error creating registration directory %s: %v", dir, err)
 		return
 	}
-	
+
 	// Process any existing files first
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -91,7 +91,7 @@ func watchRegistrationDirectory(dir string) {
 		log.Printf("Error creating filesystem watcher: %v", err)
 		return
 	}
-	
+
 	// Add the directory to watch
 	err = watcher.Add(dir)
 	if err != nil {
@@ -99,9 +99,9 @@ func watchRegistrationDirectory(dir string) {
 		watcher.Close()
 		return
 	}
-	
+
 	log.Printf("Watching registration directory: %s", dir)
-	
+
 	// Start monitoring goroutine - this now runs indefinitely
 	go func() {
 		defer watcher.Close() // Close watcher when goroutine exits

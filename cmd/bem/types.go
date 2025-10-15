@@ -24,6 +24,7 @@ type Config struct {
 	RegistrationDataDir      string         `json:"registration_data_dir"`
 	GarbageCollectorInterval uint64         `json:"garbage_collector_interval"` // seconds between GC sweeps, default 15
 	MaxCacheLifetime         uint64         `json:"max_cache_lifetime"`          // maximum cache lifetime in seconds, default 86400 (24 hours)
+	Debug                    int            `json:"debug"`                       // 0 = debug logging off, non-zero = debug logging on
 }
 
 type BigFixServer struct {
@@ -66,13 +67,16 @@ type RegisterResponse struct {
 
 // Global state variables
 var (
+	// Global configuration
+	appConfig             *Config
+
 	// Global state for client registration
 	registrationOTPs      []RegistrationOTP
 	registeredClients     []RegisteredClient
 	registrationMutex     sync.RWMutex
 	configDir            string
 	registrationDataDir  string
-	
+
 	// Session management for cookie-based admin access
 	activeSessions        map[string]time.Time // sessionToken -> expiresAt
 	sessionMutex          sync.RWMutex

@@ -34,7 +34,7 @@ func createAdminSession(otp RegistrationOTP) string {
 	}
 	activeSessions[sessionToken] = expiresAt
 	sessionMutex.Unlock()
-	
+
 	log.Printf("Created admin session for %s (expires at %s)", otp.ClientName, expiresAt.Format("15:04:05"))
 	return sessionToken
 }
@@ -91,20 +91,20 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 		log.Printf("Failed to decode client key: %v", err)
 		return "", false
 	}
-	
+
 	// Parse PEM-encoded private key
 	block, _ := pem.Decode(privateKeyBytes)
 	if block == nil {
 		log.Printf("Failed to parse PEM block from client key")
 		return "", false
 	}
-	
+
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		log.Printf("Failed to parse RSA private key: %v", err)
 		return "", false
 	}
-	
+
 	// Derive public key from private key
 	publicKey := &privateKey.PublicKey
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
@@ -156,7 +156,7 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 		
 		return matchedClientName, true
 	}
-	
+
 	log.Printf("No matching registered client found for provided key")
 	return "", false
 }

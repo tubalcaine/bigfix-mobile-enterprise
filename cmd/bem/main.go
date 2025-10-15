@@ -38,6 +38,9 @@ func main() {
 		log.Fatal("Failed to parse config file:", err)
 	}
 
+	// Make config globally accessible
+	appConfig = &config
+
 	fmt.Println(app_desc)
 	fmt.Println("Version " + app_version)
 
@@ -58,8 +61,10 @@ func main() {
 	if err := loadRegisteredClients(); err != nil {
 		log.Fatal("Failed to load registered clients:", err)
 	}
-	
-	fmt.Printf("Loaded %d registration OTPs and %d registered clients\n", len(registrationOTPs), len(registeredClients))
+
+	if config.Debug != 0 {
+		fmt.Printf("Loaded %d registration OTPs and %d registered clients\n", len(registrationOTPs), len(registeredClients))
+	}
 	
 	// Start registration directory monitoring
 	go watchRegistrationDirectory(config.RegistrationDir)
@@ -74,6 +79,7 @@ func main() {
 	}()
 
 	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
+	cache.Debug = config.Debug
 
 	for _, server := range config.BigFixServers {
 		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize, server.MaxAge)

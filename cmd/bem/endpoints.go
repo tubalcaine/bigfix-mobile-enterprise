@@ -106,7 +106,7 @@ func handleOTPEndpoint(c *gin.Context) {
 	if err := saveRegistrationOTPs(); err != nil {
 		log.Printf("Error saving registration OTPs after admin session creation: %v", err)
 	}
-	
+
 	log.Printf("Admin session created using OTP for: %s", otp.ClientName)
 	c.JSON(200, gin.H{
 		"success": true,
@@ -210,11 +210,15 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 			return
 		}
 		url = requestBody.URL
-		fmt.Printf("POST /urls - URL from body: %s\n", url)
+		if appConfig.Debug != 0 {
+			fmt.Printf("POST /urls - URL from body: %s\n", url)
+		}
 	} else {
 		// For GET requests, get URL from query parameter (existing behavior)
 		url = c.Query("url")
-		fmt.Printf("GET /urls - URL from query: %s\n", url)
+		if appConfig.Debug != 0 {
+			fmt.Printf("GET /urls - URL from query: %s\n", url)
+		}
 	}
 	
 	if url == "" {
@@ -223,14 +227,18 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		})
 		return
 	}
-	
-	fmt.Printf("Processing cache request for URL: %s\n", url)
+
+	if appConfig.Debug != 0 {
+		fmt.Printf("Processing cache request for URL: %s\n", url)
+	}
 	cacheItem, err := cache.Get(url)
-	
-	if err != nil {
-		fmt.Printf("Cache error: %v\n", err)
-	} else {
-		fmt.Printf("Cache hit successful\n")
+
+	if appConfig.Debug != 0 {
+		if err != nil {
+			fmt.Printf("Cache error: %v\n", err)
+		} else {
+			fmt.Printf("Cache hit successful\n")
+		}
 	}
 
 	if err == nil {

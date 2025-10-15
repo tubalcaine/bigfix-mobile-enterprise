@@ -24,17 +24,19 @@ type BigFixCache struct {
 	ServerCache      *sync.Map
 	MaxAge           uint64
 	MaxCacheLifetime uint64 // Maximum lifetime for any cache item in seconds
+	Debug            int    // Debug flag: 0 = off, non-zero = on
 }
 
 // BigFixServerCache represents a cache for storing one BigFix
 // server's information. It contains a map of CacheItems.
 type BigFixServerCache struct {
-	ServerName string
-	ServerUser string
-	ServerPass string
-	cpool      *Pool
-	CacheMap   *sync.Map
-	MaxAge     uint64
+	ServerName  string
+	ServerUser  string
+	ServerPass  string
+	cpool       *Pool
+	CacheMap    *sync.Map
+	MaxAge      uint64
+	ParentCache *BigFixCache // Reference to parent cache for accessing global settings
 }
 
 // CacheItem represents the result of a single BigFix GET result
@@ -72,6 +74,7 @@ func GetCache(maxAgeSeconds uint64, maxCacheLifetime uint64) *BigFixCache {
 			ServerCache:      &sync.Map{},
 			MaxAge:           maxAgeSeconds,
 			MaxCacheLifetime: maxCacheLifetime,
+			Debug:            0, // Default to debug off
 		}
 	}
 
@@ -110,10 +113,11 @@ func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int, 
 		}
 
 		scInstance := &BigFixServerCache{
-			ServerName: baseURL,
-			cpool:      newpool,
-			MaxAge:     serverMaxAge,
-			CacheMap:   &sync.Map{},
+			ServerName:  baseURL,
+			cpool:       newpool,
+			MaxAge:      serverMaxAge,
+			CacheMap:    &sync.Map{},
+			ParentCache: cache,
 		}
 
 		fmt.Fprintf(os.Stderr, "Added server %s with MaxAge: %d seconds\n", baseURL, serverMaxAge)
@@ -326,7 +330,9 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 	conn, err := sc.cpool.Acquire()
 
 	if err != nil {
-		fmt.Printf("For URL %s\nError acquiring connection: %s\n\n", urlStr, err)
+		if sc.ParentCache.Debug != 0 {
+			fmt.Printf("For URL %s\nError acquiring connection: %s\n\n", urlStr, err)
+		}
 		return nil, err
 	}
 
@@ -372,27 +378,35 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 		err = xml.Unmarshal(([]byte)(rawResponse), &besapi)
 		if err != nil {
 			sc.cpool.Release(conn)
-fmt.Printf("DEBUG.BESAPI: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
+			if sc.ParentCache.Debug != 0 {
+				fmt.Printf("DEBUG.BESAPI: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
+			}
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&besapi)
 		if err != nil {
-fmt.Printf("DEBUG.BESAPI: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
+			if sc.ParentCache.Debug != 0 {
+				fmt.Printf("DEBUG.BESAPI: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
+			}
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 	} else {
 		err = xml.Unmarshal(([]byte)(rawResponse), &bes)
 		if err != nil {
-fmt.Printf("DEBUG.BES: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
+			if sc.ParentCache.Debug != 0 {
+				fmt.Printf("DEBUG.BES: for url [%s]\nxml.Unmarshal failed, err [%s]\nRaw result [%s]\n------------\n\n", urlStr, err, rawResponse)
+			}
 			sc.cpool.Release(conn)
 			return nil, err
 		}
 
 		jsonValue, err = json.Marshal(&bes)
 		if err != nil {
-fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
+			if sc.ParentCache.Debug != 0 {
+				fmt.Printf("DEBUG.BES: for url [%s]\njson.Marshal failed, err [%s]\nRaw json [%s]\n------------\n\n", urlStr, err, jsonValue)
+			}
 			sc.cpool.Release(conn)
 			return nil, err
 		}
