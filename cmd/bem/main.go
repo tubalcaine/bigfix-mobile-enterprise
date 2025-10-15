@@ -76,7 +76,7 @@ func main() {
 	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
 
 	for _, server := range config.BigFixServers {
-		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize)
+		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize, server.MaxAge)
 		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
 	}
 

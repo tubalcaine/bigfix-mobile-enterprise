@@ -90,8 +90,9 @@ func ResetCache() {
 // It creates a new cache instance for the server if it doesn't already exist.
 // The server is identified by its URL, username, and password.
 // The poolSize parameter specifies the maximum number of connections in the connection pool.
+// The maxAge parameter specifies the cache expiration time in seconds for this server.
 // Returns the updated BigFixCache instance and an error if the server cache already exists.
-func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) (*BigFixCache, error) {
+func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int, maxAge uint64) (*BigFixCache, error) {
 	baseURL := getBaseUrl(url)
 
 	fmt.Fprintf(os.Stderr, "Get URL: %s\n", url)
@@ -102,12 +103,20 @@ func (cache *BigFixCache) AddServer(url, username, passwd string, poolSize int) 
 	if !err {
 		newpool, _ := NewPool(baseURL, username, passwd, poolSize)
 
+		// Use server-specific maxAge, or fall back to cache default if not specified
+		serverMaxAge := maxAge
+		if serverMaxAge == 0 {
+			serverMaxAge = cache.MaxAge
+		}
+
 		scInstance := &BigFixServerCache{
 			ServerName: baseURL,
 			cpool:      newpool,
-			MaxAge:     cache.MaxAge,
+			MaxAge:     serverMaxAge,
 			CacheMap:   &sync.Map{},
 		}
+
+		fmt.Fprintf(os.Stderr, "Added server %s with MaxAge: %d seconds\n", baseURL, serverMaxAge)
 
 		cache.ServerCache.Store(baseURL, scInstance)
 		// Reload scValue with the newly created cache

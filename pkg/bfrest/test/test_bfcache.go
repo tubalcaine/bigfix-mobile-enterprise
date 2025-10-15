@@ -38,8 +38,8 @@ func TestAddServer(t *testing.T) {
 		MaxCacheLifetime: 86400,
 	}
 
-	// Test adding a new server
-	_, err := cache.AddServer("http://test.com", "username", "password", 10)
+	// Test adding a new server with specific MaxAge
+	_, err := cache.AddServer("http://test.com", "username", "password", 10, 600)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -59,8 +59,12 @@ func TestAddServer(t *testing.T) {
 		t.Errorf("Expected ServerName to be %v, got %v", "http://test.com", serverCache.ServerName)
 	}
 
+	if serverCache.MaxAge != 600 {
+		t.Errorf("Expected MaxAge to be %v, got %v", 600, serverCache.MaxAge)
+	}
+
 	// Test adding a server that already exists
-	_, err = cache.AddServer("http://test.com", "username", "password", 10)
+	_, err = cache.AddServer("http://test.com", "username", "password", 10, 600)
 	if err == nil {
 		t.Errorf("Expected error, got nil")
 	}
