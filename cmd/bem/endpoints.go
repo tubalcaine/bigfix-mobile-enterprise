@@ -288,13 +288,14 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		}
 
 		c.JSON(200, gin.H{
-			"cacheitem":  responseData,
-			"iscachehit": isCacheHit,
-			"timestamp":  cacheItem.Timestamp,
-			"maxage":     cacheItem.MaxAge,
-			"ttl":        ttl,
-			"hitcount":   cacheItem.HitCount,
-			"misscount":  cacheItem.MissCount,
+			"cacheitem":   responseData,
+			"iscachehit":  isCacheHit,
+			"timestamp":   cacheItem.Timestamp,
+			"maxage":      cacheItem.MaxAge,
+			"ttl":         ttl,
+			"hitcount":    cacheItem.HitCount,
+			"misscount":   cacheItem.MissCount,
+			"contenthash": cacheItem.ContentHash,
 		})
 	} else {
 		c.JSON(404, gin.H{

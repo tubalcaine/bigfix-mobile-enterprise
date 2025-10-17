@@ -65,10 +65,30 @@ Mobile App → BEM Server → BigFix Server(s)
 - `/requestregistration` - Request device registration
 - `/register` - Complete device registration with OTP
 - `/otp` - Browser-based admin session creation
-- `/urls` - Cached BigFix query responses (authenticated)
+- `/urls` - Cached BigFix query responses with metadata (authenticated)
 - `/servers` - List available BigFix servers (authenticated)
 - `/summary` - Cache statistics (authenticated)
+- `/cache` - List cached URLs per server (authenticated)
 - `/help` - API documentation
+
+### `/urls` Endpoint Response Format
+
+The `/urls` endpoint returns comprehensive cache metadata along with the requested data:
+
+```json
+{
+  "cacheitem": "...",           // Actual cached data (JSON or XML-to-JSON)
+  "iscachehit": true,           // Whether data was served from valid cache
+  "timestamp": 1729169340,      // Unix epoch timestamp of cache entry creation
+  "maxage": 300,                // Current maximum age in seconds
+  "ttl": 245,                   // Time-to-live in seconds until expiration
+  "hitcount": 5,                // Number of times this URL was served from cache
+  "misscount": 2,               // Number of times this URL required server fetch
+  "contenthash": "a1b2c3..."    // MD5 hash of the raw server response
+}
+```
+
+This metadata enables clients to make informed decisions about cache freshness and reliability.
 
 ## Configuration
 
@@ -163,13 +183,20 @@ The BEM server implements intelligent caching with the following features:
 - Maximum cache lifetime is enforced by `max_cache_lifetime` setting
 - Changed content resets to the base `maxage` value
 
+### Cache Hit/Miss Tracking
+- **Hit Count**: Incremented each time valid cached data is returned
+- **Miss Count**: Incremented when data needs to be fetched from the server
+- Counters persist across cache updates and garbage collection
+- Useful for analyzing access patterns and optimizing `maxage` settings
+
 ### Garbage Collection
 - Runs periodically based on `garbage_collector_interval` setting
 - Clears JSON data from expired cache items to free memory
-- Preserves metadata for future cache hits
+- Preserves metadata (including hit/miss counts) for future cache hits
 
 ### Cache Inspection
 Use the `/cache` endpoint or the `cache` CLI command to inspect cached URLs.
+Use the `/summary` endpoint for aggregate statistics including memory usage.
 
 ## Troubleshooting
 
