@@ -47,12 +47,16 @@ type BigFixServerCache struct {
 // MaxAge stores the cache expiration time in seconds for this item (can grow dynamically).
 // BaseMaxAge stores the original MaxAge value from the server for increment calculations.
 // ContentHash stores the MD5 hash of the raw data from the server.
+// HitCount tracks the number of times this cache item was accessed with valid data.
+// MissCount tracks the number of times this cache item was requested but not found or expired.
 type CacheItem struct {
 	Timestamp   int64
 	Json        string
 	MaxAge      uint64
 	BaseMaxAge  uint64
 	ContentHash string
+	HitCount    uint64
+	MissCount   uint64
 }
 
 var cacheInstance *BigFixCache
@@ -210,6 +214,8 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Initialize with MissCount = 1 for this first request
+		cm.MissCount = 1
 		sc.CacheMap.Store(url, cm)
 		return cm, nil
 	}
@@ -233,8 +239,11 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	}
 
 	if needsRefresh {
+		// Cache miss - data is expired or empty, increment MissCount
+		cm.MissCount++
+
 		if cache.Debug != 0 {
-			fmt.Fprintf(os.Stderr, "  --> Refreshing from server...\n")
+			fmt.Fprintf(os.Stderr, "  --> Refreshing from server... (MissCount=%d)\n", cm.MissCount)
 		}
 
 		// Fetch fresh data from server
@@ -280,6 +289,8 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				MaxAge:      newMaxAge,
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: cm.ContentHash, // Keep old hash since content matches
+				HitCount:    cm.HitCount,    // Preserve hit count
+				MissCount:   cm.MissCount,   // Preserve miss count
 			}
 
 			if cache.Debug != 0 {
@@ -304,6 +315,8 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 				MaxAge:      cm.BaseMaxAge, // Reset to base, not newItem.MaxAge
 				BaseMaxAge:  cm.BaseMaxAge,
 				ContentHash: newItem.ContentHash, // Update to new hash
+				HitCount:    cm.HitCount,         // Preserve hit count
+				MissCount:   cm.MissCount,        // Preserve miss count
 			}
 
 			if cache.Debug != 0 {
@@ -345,12 +358,18 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		return updatedItem, nil
 	}
 
+	// Cache hit - data is valid and not expired, increment HitCount
+	cm.HitCount++
+
 	if cache.Debug != 0 {
-		fmt.Fprintf(os.Stderr, "  --> Cache hit - returning existing item\n")
+		fmt.Fprintf(os.Stderr, "  --> Cache hit - returning existing item (HitCount=%d)\n", cm.HitCount)
 		fmt.Fprintf(os.Stderr, "=== END CACHE CHECK ===\n\n")
 	}
 
-	// Cache hit - return existing valid item
+	// Store the updated HitCount back to the cache
+	sc.CacheMap.Store(url, cm)
+
+	// Return the valid cached item
 	return cm, nil
 }
 
@@ -396,6 +415,8 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 					MaxAge:      sc.MaxAge,
 					BaseMaxAge:  sc.MaxAge,
 					ContentHash: contentHash,
+					HitCount:    0,
+					MissCount:   0,
 				}, nil
 			}
 		}
@@ -456,6 +477,8 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 		MaxAge:      sc.MaxAge,
 		BaseMaxAge:  sc.MaxAge,
 		ContentHash: contentHash,
+		HitCount:    0,
+		MissCount:   0,
 	}, nil
 }
 
@@ -575,6 +598,8 @@ func (cache *BigFixCache) sweepExpiredItems() {
 					MaxAge:      item.MaxAge,
 					BaseMaxAge:  item.BaseMaxAge,
 					ContentHash: item.ContentHash,
+					HitCount:    item.HitCount,  // Preserve hit count
+					MissCount:   item.MissCount, // Preserve miss count
 				}
 
 				// Replace the entire CacheItem for thread safety

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	neturl "net/url"
 	"strings"
 	"time"
 
@@ -228,8 +229,27 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		return
 	}
 
+	// Determine if this will be a cache hit before calling cache.Get()
+	requestTime := time.Now().Unix()
+	isCacheHit := false
+
+	// Parse base URL to check cache status
+	if parsedURL, parseErr := neturl.Parse(url); parseErr == nil {
+		baseURL := parsedURL.Scheme + "://" + parsedURL.Host
+		if scValue, ok := cache.ServerCache.Load(baseURL); ok {
+			sc := scValue.(*bfrest.BigFixServerCache)
+			if value, ok := sc.CacheMap.Load(url); ok {
+				if cm, ok := value.(*bfrest.CacheItem); ok {
+					isEmpty := cm.Json == ""
+					isExpired := requestTime-cm.Timestamp > int64(cm.MaxAge)
+					isCacheHit = !isEmpty && !isExpired
+				}
+			}
+		}
+	}
+
 	if appConfig.Debug != 0 {
-		fmt.Printf("Processing cache request for URL: %s\n", url)
+		fmt.Printf("Processing cache request for URL: %s (will be cache hit: %v)\n", url, isCacheHit)
 	}
 	cacheItem, err := cache.Get(url)
 
@@ -259,9 +279,22 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 			// For XML->JSON conversion, return as string (existing behavior)
 			responseData = cacheItem.Json
 		}
-		
+
+		// Calculate TTL (time-to-live): timestamp + maxage - current_time
+		currentTime := time.Now().Unix()
+		ttl := cacheItem.Timestamp + int64(cacheItem.MaxAge) - currentTime
+		if ttl < 0 {
+			ttl = 0 // TTL cannot be negative
+		}
+
 		c.JSON(200, gin.H{
-			"cacheitem": responseData,
+			"cacheitem":  responseData,
+			"iscachehit": isCacheHit,
+			"timestamp":  cacheItem.Timestamp,
+			"maxage":     cacheItem.MaxAge,
+			"ttl":        ttl,
+			"hitcount":   cacheItem.HitCount,
+			"misscount":  cacheItem.MissCount,
 		})
 	} else {
 		c.JSON(404, gin.H{
