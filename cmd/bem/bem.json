@@ -21,6 +21,8 @@
       }
     ],
   "listen_port": 17967,
+  "cert_path": "./bem-cert.pem",
+  "key_path": "./bem-key.pem",
   "registration_dir": "./registrations",
   "requests_dir": "./requests"
 }
