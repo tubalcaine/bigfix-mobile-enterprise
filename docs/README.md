@@ -20,6 +20,7 @@ BigFix Mobile Enterprise (BEM) is a Go-based caching proxy server that provides 
 - **URL Encoding**: Proper handling of BigFix query parameters
 - **Authentication**: RSA key-based client authentication with session management
 - **Format Detection**: Automatic handling of JSON vs XML BigFix responses
+- **Structured Logging**: Level-based logging with automatic rotation and TLS diagnostics
 - **CLI Interface**: Interactive command-line interface for management
 
 ## Documentation Structure
@@ -43,8 +44,10 @@ BigFix Mobile Enterprise (BEM) is a Go-based caching proxy server that provides 
 
 ## Key Technologies
 
-- **Go 1.19+**: Core implementation language
+- **Go 1.21+**: Core implementation language
 - **Gin Framework**: HTTP server and routing
+- **slog**: Structured logging (Go standard library)
+- **lumberjack**: Automatic log rotation
 - **JSON/XML Processing**: BigFix data format handling
 - **RSA Cryptography**: Client authentication
 - **Sync Maps**: Thread-safe caching

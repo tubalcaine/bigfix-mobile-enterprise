@@ -2,8 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 	neturl "net/url"
 	"strings"
 	"time"
@@ -90,7 +89,7 @@ func handleOTPEndpoint(c *gin.Context) {
 	// Find and remove OTP (consumes it like registration does)
 	otp, found := findAndRemoveOTPByKey(oneTimeKey)
 	if !found {
-		log.Printf("Failed admin session attempt with invalid OTP: %s", oneTimeKey)
+		slog.Warn("Failed admin session attempt with invalid OTP", "otp_key", oneTimeKey)
 		c.JSON(401, gin.H{
 			"success": false,
 			"message": "Invalid OneTimeKey",
@@ -100,15 +99,15 @@ func handleOTPEndpoint(c *gin.Context) {
 
 	// Create admin session and set cookie
 	sessionToken := createAdminSession(*otp)
-	
+
 	c.SetCookie("bem_session", sessionToken, 8*60*60, "/", "", false, true) // 8 hours, HttpOnly
-	
+
 	// Save updated OTPs (with the used one removed)
 	if err := saveRegistrationOTPs(); err != nil {
-		log.Printf("Error saving registration OTPs after admin session creation: %v", err)
+		slog.Error("Error saving registration OTPs after admin session creation", "error", err)
 	}
 
-	log.Printf("Admin session created using OTP for: %s", otp.ClientName)
+	slog.Info("Admin session created using OTP", "client_name", otp.ClientName)
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "Admin session created successfully",
@@ -147,7 +146,8 @@ func handleRegisterEndpoint(c *gin.Context, config Config) {
 	// Find and validate OTP
 	otp, found := findAndRemoveOTP(req.ClientName, req.OneTimeKey)
 	if !found {
-		log.Printf("Failed registration attempt from %s with invalid OTP", req.ClientName)
+		slog.Warn("Failed registration attempt with invalid OTP",
+			"client_name", req.ClientName)
 		c.JSON(401, RegisterResponse{
 			Success: false,
 			Message: "Invalid ClientName or OneTimeKey",
@@ -159,7 +159,9 @@ func handleRegisterEndpoint(c *gin.Context, config Config) {
 	// Generate key pair and register client
 	response, err := generateAndRegisterClient(*otp, config.KeySize)
 	if err != nil {
-		log.Printf("Failed to register client %s: %v", req.ClientName, err)
+		slog.Error("Failed to register client",
+			"client_name", req.ClientName,
+			"error", err)
 		c.JSON(500, RegisterResponse{
 			Success: false,
 			Message: "Internal server error during registration",
@@ -167,7 +169,7 @@ func handleRegisterEndpoint(c *gin.Context, config Config) {
 		return
 	}
 
-	log.Printf("Successfully registered client: %s", req.ClientName)
+	slog.Info("Successfully registered client", "client_name", req.ClientName)
 	c.JSON(200, response)
 }
 
@@ -211,15 +213,11 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 			return
 		}
 		url = requestBody.URL
-		if appConfig.Debug != 0 {
-			fmt.Printf("POST /urls - URL from body: %s\n", url)
-		}
+		slog.Debug("POST /urls request", "url", url)
 	} else {
 		// For GET requests, get URL from query parameter (existing behavior)
 		url = c.Query("url")
-		if appConfig.Debug != 0 {
-			fmt.Printf("GET /urls - URL from query: %s\n", url)
-		}
+		slog.Debug("GET /urls request", "url", url)
 	}
 	
 	if url == "" {
@@ -248,17 +246,13 @@ func handleURLsEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		}
 	}
 
-	if appConfig.Debug != 0 {
-		fmt.Printf("Processing cache request for URL: %s (will be cache hit: %v)\n", url, isCacheHit)
-	}
+	slog.Debug("Processing cache request", "url", url, "will_be_cache_hit", isCacheHit)
 	cacheItem, err := cache.Get(url)
 
-	if appConfig.Debug != 0 {
-		if err != nil {
-			fmt.Printf("Cache error: %v\n", err)
-		} else {
-			fmt.Printf("Cache hit successful\n")
-		}
+	if err != nil {
+		slog.Debug("Cache error", "error", err)
+	} else {
+		slog.Debug("Cache hit successful")
 	}
 
 	if err == nil {

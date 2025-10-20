@@ -1,7 +1,7 @@
 {
   "app_cache_timeout": 0,
   "keysize": 2048,
-  "debug": 0,
+  "debug": 1,
   "max_cache_lifetime": 86400,
   "garbage_collector_interval": 1,
   "bigfix_servers": [
@@ -24,5 +24,12 @@
   "cert_path": "./bem-cert.pem",
   "key_path": "./bem-key.pem",
   "registration_dir": "./registrations",
-  "requests_dir": "./requests"
+  "requests_dir": "./requests",
+  "log_to_file": true,
+  "log_file_path": "./logs/bem.log",
+  "log_max_size_mb": 50,
+  "log_max_backups": 10,
+  "log_max_age_days": 30,
+  "log_compress": true,
+  "log_to_console": true
 }

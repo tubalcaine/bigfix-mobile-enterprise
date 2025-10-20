@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,88 +19,90 @@ import (
 // Registration directory monitoring functions
 
 func processRegistrationFile(filename string) {
-	log.Printf("Processing registration file: %s", filename)
+	slog.Info("Processing registration file", "filename", filename)
 
 	// Read the file
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		log.Printf("Error reading registration file %s: %v", filename, err)
+		slog.Error("Error reading registration file", "filename", filename, "error", err)
 		return
 	}
 
 	// Parse JSON array of registration OTPs
 	var newOTPs []RegistrationOTP
 	if err := json.Unmarshal(data, &newOTPs); err != nil {
-		log.Printf("Error parsing registration file %s: %v", filename, err)
+		slog.Error("Error parsing registration file", "filename", filename, "error", err)
 		return
 	}
-	
+
 	// Add CreatedAt timestamp to new OTPs
 	now := time.Now()
 	for i := range newOTPs {
 		newOTPs[i].CreatedAt = now
 	}
-	
+
 	// Add to our slice and save
 	registrationMutex.Lock()
 	registrationOTPs = append(registrationOTPs, newOTPs...)
 	registrationMutex.Unlock()
-	
+
 	if err := saveRegistrationOTPs(); err != nil {
-		log.Printf("Error saving registration OTPs: %v", err)
+		slog.Error("Error saving registration OTPs", "error", err)
 		return
 	}
 
 	// Remove the processed file
 	if err := os.Remove(filename); err != nil {
-		log.Printf("Warning: Could not remove processed registration file %s: %v", filename, err)
+		slog.Warn("Could not remove processed registration file", "filename", filename, "error", err)
 	} else {
-		log.Printf("Successfully processed and removed registration file %s, added %d OTPs", filename, len(newOTPs))
+		slog.Info("Successfully processed and removed registration file",
+			"filename", filename,
+			"otp_count", len(newOTPs))
 	}
 }
 
 func watchRegistrationDirectory(dir string) {
 	if dir == "" {
-		log.Println("No registration directory configured, skipping file monitoring")
+		slog.Info("No registration directory configured, skipping file monitoring")
 		return
 	}
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(dir, 0700); err != nil {
-		log.Printf("Error creating registration directory %s: %v", dir, err)
+		slog.Error("Error creating registration directory", "directory", dir, "error", err)
 		return
 	}
 
 	// Process any existing files first
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		log.Printf("Error reading registration directory %s: %v", dir, err)
+		slog.Error("Error reading registration directory", "directory", dir, "error", err)
 		return
 	}
-	
+
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".json") {
 			fullPath := filepath.Join(dir, entry.Name())
 			processRegistrationFile(fullPath)
 		}
 	}
-	
+
 	// Set up filesystem watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Printf("Error creating filesystem watcher: %v", err)
+		slog.Error("Error creating filesystem watcher", "error", err)
 		return
 	}
 
 	// Add the directory to watch
 	err = watcher.Add(dir)
 	if err != nil {
-		log.Printf("Error watching registration directory %s: %v", dir, err)
+		slog.Error("Error watching registration directory", "directory", dir, "error", err)
 		watcher.Close()
 		return
 	}
 
-	log.Printf("Watching registration directory: %s", dir)
+	slog.Info("Watching registration directory", "directory", dir)
 
 	// Start monitoring goroutine - this now runs indefinitely
 	go func() {
@@ -126,7 +128,7 @@ func watchRegistrationDirectory(dir string) {
 				if !ok {
 					return
 				}
-				log.Printf("Filesystem watcher error: %v", err)
+				slog.Error("Filesystem watcher error", "error", err)
 			}
 		}
 	}()

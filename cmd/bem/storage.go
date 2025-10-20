@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -42,7 +42,7 @@ func saveRegistrationOTPs() error {
 	
 	// Create backup
 	if err := createBackup(filename); err != nil {
-		log.Printf("Warning: Could not create backup of %s: %v", filename, err)
+		slog.Warn("Could not create backup", "filename", filename, "error", err)
 	}
 	
 	// Write to temporary file first, then rename (atomic operation)
@@ -93,7 +93,7 @@ func saveRegisteredClientsUnlocked() error {
 	
 	// Create backup
 	if err := createBackup(filename); err != nil {
-		log.Printf("Warning: Could not create backup of %s: %v", filename, err)
+		slog.Warn("Could not create backup", "filename", filename, "error", err)
 	}
 	
 	// Marshal to JSON
@@ -143,19 +143,19 @@ func loadRegisteredClients() error {
 		// Validate PEM-encoded public key
 		block, _ := pem.Decode([]byte(client.PublicKey))
 		if block == nil {
-			log.Printf("Warning: Invalid PEM key for client %s, removing", client.ClientName)
+			slog.Warn("Invalid PEM key for client, removing", "client_name", client.ClientName)
 			continue
 		}
-		
+
 		_, err := x509.ParsePKIXPublicKey(block.Bytes)
 		if err != nil {
-			log.Printf("Warning: Invalid public key for client %s, removing: %v", client.ClientName, err)
+			slog.Warn("Invalid public key for client, removing", "client_name", client.ClientName, "error", err)
 			continue
 		}
-		
+
 		// Check if expired
 		if client.ExpiresAt != nil && time.Now().After(*client.ExpiresAt) {
-			log.Printf("Info: Expired client %s removed", client.ClientName)
+			slog.Info("Expired client removed", "client_name", client.ClientName)
 			continue
 		}
 		

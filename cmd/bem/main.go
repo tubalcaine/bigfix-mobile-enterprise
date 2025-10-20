@@ -8,10 +8,9 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,25 +23,35 @@ func main() {
 	flag.Parse()
 
 	if *configFile == "" {
-		log.Fatal("Config file not provided")
+		slog.Error("Config file not provided")
+		os.Exit(1)
 	}
 
 	configData, err := os.ReadFile(*configFile)
 	if err != nil {
-		log.Fatal("Failed to read config file:", err)
+		slog.Error("Failed to read config file", "error", err)
+		os.Exit(1)
 	}
 
 	var config Config
 	err = json.Unmarshal(configData, &config)
 	if err != nil {
-		log.Fatal("Failed to parse config file:", err)
+		slog.Error("Failed to parse config file", "error", err)
+		os.Exit(1)
 	}
 
 	// Make config globally accessible
 	appConfig = &config
 
-	fmt.Println(app_desc)
-	fmt.Println("Version " + app_version)
+	// Initialize logger with full config
+	if err := InitLogger(config); err != nil {
+		slog.Error("Failed to initialize logger", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("Starting application",
+		"name", app_desc,
+		"version", app_version)
 
 	// Set up configuration directory for persistent storage
 	configDir = filepath.Dir(*configFile)
@@ -52,19 +61,21 @@ func main() {
 	if registrationDataDir == "" {
 		registrationDataDir = configDir // fallback to config directory
 	}
-	
+
 	// Load existing registration data
 	if err := loadRegistrationOTPs(); err != nil {
-		log.Fatal("Failed to load registration OTPs:", err)
-	}
-	
-	if err := loadRegisteredClients(); err != nil {
-		log.Fatal("Failed to load registered clients:", err)
+		slog.Error("Failed to load registration OTPs", "error", err)
+		os.Exit(1)
 	}
 
-	if config.Debug != 0 {
-		fmt.Printf("Loaded %d registration OTPs and %d registered clients\n", len(registrationOTPs), len(registeredClients))
+	if err := loadRegisteredClients(); err != nil {
+		slog.Error("Failed to load registered clients", "error", err)
+		os.Exit(1)
 	}
+
+	slog.Debug("Loaded registration data",
+		"otp_count", len(registrationOTPs),
+		"client_count", len(registeredClients))
 	
 	// Start registration directory monitoring
 	go watchRegistrationDirectory(config.RegistrationDir)
@@ -81,30 +92,52 @@ func main() {
 	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
 	cache.Debug = config.Debug
 
+	slog.Info("Initializing BigFix server connections",
+		"server_count", len(config.BigFixServers))
+
 	for _, server := range config.BigFixServers {
 		cache.AddServer(server.URL, server.Username, server.Password, server.PoolSize, server.MaxAge)
 		go cache.PopulateCoreTypes(server.URL, server.MaxAge)
+		slog.Debug("Added BigFix server",
+			"url", server.URL,
+			"pool_size", server.PoolSize,
+			"max_age", server.MaxAge)
 	}
 
 	// Start the garbage collector after cache is initialized with servers
 	cache.StartGarbageCollector(config.GarbageCollectorInterval)
 
-	r := gin.Default()
+	// Set Gin to release mode if not in debug
+	if config.Debug == 0 {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Create Gin router with custom middleware
+	r := gin.New()
+
+	// Add our custom middleware
+	logger := GetLogger()
+	r.Use(RecoveryMiddleware(logger))
+	r.Use(RequestLoggingMiddleware(logger))
+	r.Use(ErrorLoggingMiddleware(logger))
 
 	// Set up all routes
 	setupRoutes(r, cache, config)
 
-	// Configure TLS
-	// Remove the declaration of tlsConfig since it is not being used
-	// tlsConfig := &tls.Config{
-	//     MinVersion: tls.VersionTLS12,
-	// }
-
-	if config.KeyPath != "" {
-		go r.RunTLS(":"+strconv.Itoa(config.ListenPort), config.CertPath, config.KeyPath) // listen and serve on specified port with TLS
-	} else {
-		go r.Run(":" + strconv.Itoa(config.ListenPort)) // listen and serve on specified port
+	// Validate TLS configuration (HTTPS-only server)
+	if config.KeyPath == "" || config.CertPath == "" {
+		slog.Error("TLS certificate and key are required - HTTP-only mode is not supported")
+		os.Exit(1)
 	}
+
+	// Start HTTPS server in goroutine
+	go func() {
+		err := StartTLSServer(r, config.CertPath, config.KeyPath, config.ListenPort, logger)
+		if err != nil {
+			slog.Error("Server error", "error", err)
+			os.Exit(1)
+		}
+	}()
 
 	// loop and wait for input so the program doesn't exit.
 	for {

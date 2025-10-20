@@ -8,10 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,7 +35,9 @@ func createAdminSession(otp RegistrationOTP) string {
 	activeSessions[sessionToken] = expiresAt
 	sessionMutex.Unlock()
 
-	log.Printf("Created admin session for %s (expires at %s)", otp.ClientName, expiresAt.Format("15:04:05"))
+	slog.Info("Created admin session",
+		"client_name", otp.ClientName,
+		"expires_at", expiresAt.Format("15:04:05"))
 	return sessionToken
 }
 
@@ -88,20 +90,20 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 	// Decode base64 private key
 	privateKeyBytes, err := base64.StdEncoding.DecodeString(encodedPrivateKey)
 	if err != nil {
-		log.Printf("Failed to decode client key: %v", err)
+		slog.Warn("Failed to decode client key", "error", err)
 		return "", false
 	}
 
 	// Parse PEM-encoded private key
 	block, _ := pem.Decode(privateKeyBytes)
 	if block == nil {
-		log.Printf("Failed to parse PEM block from client key")
+		slog.Warn("Failed to parse PEM block from client key")
 		return "", false
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		log.Printf("Failed to parse RSA private key: %v", err)
+		slog.Warn("Failed to parse RSA private key", "error", err)
 		return "", false
 	}
 
@@ -109,7 +111,7 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 	publicKey := &privateKey.PublicKey
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
-		log.Printf("Failed to marshal public key: %v", err)
+		slog.Warn("Failed to marshal public key", "error", err)
 		return "", false
 	}
 	
@@ -128,7 +130,7 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 		if client.PublicKey == publicKeyString {
 			// Check if expired
 			if client.ExpiresAt != nil && time.Now().After(*client.ExpiresAt) {
-				log.Printf("Client %s key has expired", client.ClientName)
+				slog.Warn("Client key has expired", "client_name", client.ClientName)
 				registrationMutex.RUnlock()
 				return "", false
 			}
@@ -157,7 +159,7 @@ func isValidClientKey(encodedPrivateKey string) (string, bool) {
 		return matchedClientName, true
 	}
 
-	log.Printf("No matching registered client found for provided key")
+	slog.Warn("No matching registered client found for provided key")
 	return "", false
 }
 
@@ -178,7 +180,7 @@ func isAuthenticatedRequest(c *gin.Context) bool {
 			c.Set("client_name", clientName)
 			return true
 		}
-		log.Printf("Invalid client key authentication attempt")
+		slog.Warn("Invalid client key authentication attempt")
 	}
 	
 	return false

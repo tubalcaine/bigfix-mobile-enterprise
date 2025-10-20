@@ -25,6 +25,15 @@ type Config struct {
 	GarbageCollectorInterval uint64         `json:"garbage_collector_interval"` // seconds between GC sweeps, default 15
 	MaxCacheLifetime         uint64         `json:"max_cache_lifetime"`          // maximum cache lifetime in seconds, default 86400 (24 hours)
 	Debug                    int            `json:"debug"`                       // 0 = debug logging off, non-zero = debug logging on
+
+	// Logging configuration
+	LogToFile     bool   `json:"log_to_file"`       // enable file logging
+	LogFilePath   string `json:"log_file_path"`     // path to log file
+	LogMaxSizeMB  int    `json:"log_max_size_mb"`   // maximum size in megabytes before rotation
+	LogMaxBackups int    `json:"log_max_backups"`   // maximum number of old log files to retain
+	LogMaxAgeDays int    `json:"log_max_age_days"`  // maximum number of days to retain old log files
+	LogCompress   bool   `json:"log_compress"`      // compress old log files with gzip
+	LogToConsole  bool   `json:"log_to_console"`    // also log to stdout (in addition to file)
 }
 
 type BigFixServer struct {

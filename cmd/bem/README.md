@@ -2,7 +2,9 @@
 
 ## Overview
 
-The BEM (BigFix Enterprise Mobile) server is the main application component that provides a REST API gateway to BigFix servers. It handles authentication, caching, request routing, and format conversion between mobile clients and BigFix infrastructure.
+The BEM (BigFix Enterprise Mobile) server is the main application component that provides a secure HTTPS REST API gateway to BigFix servers. It handles authentication, caching, request routing, and format conversion between mobile clients and BigFix infrastructure.
+
+**Security Note**: The server operates in HTTPS-only mode. TLS certificate and key are required for operation.
 
 ## Files Overview
 
@@ -17,6 +19,9 @@ The BEM (BigFix Enterprise Mobile) server is the main application component that
 | **registration.go** | Client registration logic | Registration file monitoring, OTP management, key generation |
 | **requests.go** | Registration request handling | Request file creation, filename sanitization |
 | **storage.go** | Persistent data management | JSON file I/O for OTPs, clients, backups |
+| **logging.go** | Logging configuration and setup | slog initialization, log levels, file rotation configuration |
+| **server.go** | HTTP/TLS server with logging | Custom TLS server, connection logging, handshake error capture |
+| **middleware.go** | Gin HTTP middleware | Request logging, error logging, panic recovery |
 
 ### Configuration & Data Files
 
@@ -113,9 +118,17 @@ Access via the server console after starting:
   "cert_path": "/path/to/cert.crt",
   "key_path": "/path/to/private.key",
   "keysize": 2048,
+  "debug": 1,
   "registration_dir": "./registrations",
-  "requests_dir": "./requests", 
+  "requests_dir": "./requests",
   "registration_data_dir": "./data",
+  "log_to_file": true,
+  "log_file_path": "./logs/bem.log",
+  "log_max_size_mb": 50,
+  "log_max_backups": 10,
+  "log_max_age_days": 30,
+  "log_compress": true,
+  "log_to_console": true,
   "bigfix_servers": [
     {
       "url": "https://bigfix-server:52311",
@@ -130,16 +143,20 @@ Access via the server console after starting:
 
 ## Security Features
 
+- **HTTPS-Only**: TLS required for all connections (HTTP not supported)
 - **RSA Key Authentication**: 2048-bit keys with configurable lifespan
 - **Request Sanitization**: Filename security, directory traversal prevention
 - **Session Management**: Secure cookie handling, automatic cleanup
-- **TLS Support**: Optional HTTPS with certificate configuration
+- **TLS 1.2+**: Minimum TLS version 1.2 with strong cipher suites
 - **Input Validation**: Parameter validation, error handling
 
 ## Development Notes
 
 - **Thread Safety**: Uses `sync.RWMutex` for concurrent access
-- **Error Handling**: Comprehensive error logging and user feedback  
+- **Error Handling**: Comprehensive error logging and user feedback
+- **Structured Logging**: Uses Go's standard `log/slog` for structured, level-based logging
+- **Log Rotation**: Automatic log file rotation using lumberjack (size and age-based)
+- **TLS Diagnostics**: Custom TLS server wrapper captures handshake errors with full context
 - **Graceful Shutdown**: Proper resource cleanup on exit
 - **File Monitoring**: Real-time registration processing with goroutine management
 - **Backup Strategy**: Automatic data backups prevent data loss

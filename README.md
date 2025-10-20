@@ -20,6 +20,7 @@ bigfix-mobile-enterprise/
 - **Registration System**: Self-service device registration with admin approval
 - **REST API Proxy**: Caches BigFix `/api/query` responses
 - **Interactive CLI**: Real-time management and diagnostics
+- **HTTPS-Only**: Secure TLS-only communication (HTTP not supported)
 
 ## Quick Start
 
@@ -32,11 +33,15 @@ bigfix-mobile-enterprise/
    ```json
    {
      "listen_port": 17967,
+     "cert_path": "./bem-cert.pem",
+     "key_path": "./bem-key.pem",
      "bigfix_servers": [...],
      "registration_dir": "./registrations",
      "requests_dir": "./requests"
    }
    ```
+
+   **Note**: TLS certificate and key are required. The server will not start without them.
 
 3. **Run the server**:
    ```bash
@@ -95,7 +100,7 @@ This metadata enables clients to make informed decisions about cache freshness a
 The server uses JSON configuration files (`bem.json`) with the following options:
 
 ### Core Settings
-- `listen_port` - HTTP server port (default: 17967)
+- `listen_port` - HTTPS server port (default: 17967)
 - `keysize` - RSA key size for client registration (default: 2048)
 - `debug` - Debug logging control (0 = off, non-zero = on)
 
@@ -109,9 +114,20 @@ The server uses JSON configuration files (`bem.json`) with the following options
 - `requests_dir` - Directory for client registration requests (e.g., "./requests")
 - `registration_data_dir` - Directory for persistent registration data storage
 
-### TLS Settings (Optional)
-- `cert_path` - Path to TLS certificate file
-- `key_path` - Path to TLS private key file
+### TLS Settings (Required)
+- `cert_path` - Path to TLS certificate file (required)
+- `key_path` - Path to TLS private key file (required)
+
+**Note**: The BEM server operates in HTTPS-only mode. TLS certificate and key must be provided. HTTP connections are not supported.
+
+### Logging Configuration
+- `log_to_file` - Enable file logging (default: false)
+- `log_file_path` - Path to log file (default: "./logs/bem.log")
+- `log_max_size_mb` - Maximum log file size in MB before rotation (default: 100)
+- `log_max_backups` - Maximum number of old log files to retain (default: 5)
+- `log_max_age_days` - Maximum number of days to retain old log files (default: 30)
+- `log_compress` - Compress rotated log files with gzip (default: false)
+- `log_to_console` - Also log to console/stdout when file logging is enabled (default: false)
 
 ### BigFix Server Configuration
 Each server in the `bigfix_servers` array supports:
@@ -126,7 +142,7 @@ Each server in the `bigfix_servers` array supports:
 {
   "app_cache_timeout": 0,
   "keysize": 2048,
-  "debug": 0,
+  "debug": 1,
   "max_cache_lifetime": 86400,
   "garbage_collector_interval": 15,
   "bigfix_servers": [
@@ -139,8 +155,17 @@ Each server in the `bigfix_servers` array supports:
     }
   ],
   "listen_port": 17967,
+  "cert_path": "./bem-cert.pem",
+  "key_path": "./bem-key.pem",
   "registration_dir": "./registrations",
-  "requests_dir": "./requests"
+  "requests_dir": "./requests",
+  "log_to_file": true,
+  "log_file_path": "./logs/bem.log",
+  "log_max_size_mb": 50,
+  "log_max_backups": 10,
+  "log_max_age_days": 30,
+  "log_compress": true,
+  "log_to_console": true
 }
 ```
 
@@ -157,22 +182,95 @@ When the BEM server is running, you can use these interactive commands:
 - `help` - Display available commands
 - `exit` - Terminate the server
 
-## Debug Logging
+## Logging
 
-Debug logging can be controlled via the `debug` configuration setting:
+The BEM server uses Go's standard `log/slog` library for structured logging with automatic log rotation support.
 
-### Enable Debug Logging
-Set `"debug": 1` in `bem.json` to enable detailed logging:
-- Client registration and authentication events
-- File monitoring operations
-- Cache request processing
-- XML/JSON parsing errors
-- Connection acquisition and release
+### Log Levels
 
-### Disable Debug Logging
-Set `"debug": 0` in `bem.json` to disable debug output (production mode)
+Logging behavior is controlled via the `debug` configuration setting:
 
-**Note**: Error and warning messages are always logged regardless of the debug setting.
+**Debug Mode (`"debug": 1`):**
+- DEBUG level messages (detailed diagnostics)
+- INFO level messages (operational information)
+- WARN level messages (warnings and non-critical issues)
+- ERROR level messages (errors and failures)
+- Source code locations included in logs
+- TLS handshake details
+- HTTP request/response details
+- Cache operation details
+
+**Production Mode (`"debug": 0`):**
+- INFO level messages and above
+- WARN level messages
+- ERROR level messages
+- No source code locations
+- Reduced verbosity for performance
+
+### Structured Logging
+
+All log messages use structured key-value pairs for easy parsing and analysis:
+
+```
+time=2025-10-20T09:37:15.005-04:00 level=ERROR msg="TLS connection error" error="tls: first record does not look like a TLS handshake" remote_addr="192.168.1.100:54321" bytes_read=5
+```
+
+### Log Rotation
+
+When file logging is enabled (`"log_to_file": true`), logs automatically rotate based on:
+
+- **Size-Based Rotation**: When log file reaches `log_max_size_mb`, it's rotated
+- **Age-Based Cleanup**: Files older than `log_max_age_days` are deleted
+- **Backup Retention**: Keep up to `log_max_backups` old log files
+- **Compression**: Optionally compress old logs with gzip (`log_compress`)
+
+**Example Rotated Logs:**
+```
+./logs/
+├── bem.log                           (current log)
+├── bem-2025-10-20T09-15-30.123.log  (rotated log)
+├── bem-2025-10-19T14-22-18.456.log.gz (compressed)
+└── bem-2025-10-18T08-45-02.789.log.gz (compressed)
+```
+
+### Log Destinations
+
+**Console Only (default):**
+```json
+{
+  "log_to_file": false
+}
+```
+Logs appear only on stdout/console.
+
+**File Only:**
+```json
+{
+  "log_to_file": true,
+  "log_to_console": false
+}
+```
+Logs written only to file, silent console.
+
+**Both File and Console:**
+```json
+{
+  "log_to_file": true,
+  "log_to_console": true
+}
+```
+Logs appear on both console and file (recommended for development).
+
+### TLS Connection Logging
+
+The server includes comprehensive TLS connection logging to diagnose handshake failures:
+
+- Connection acceptance from client IP
+- TLS version and cipher suite negotiation
+- Handshake completion details
+- **TLS errors with full context** (client IP, error message, bytes read)
+
+This is particularly useful for diagnosing "Unable to parse TLS header" and similar TLS connection issues.
 
 ## Cache Management
 
@@ -226,8 +324,10 @@ Enable debug logging (`"debug": 1`) to diagnose issues with:
 
 ## Development
 
-Built with Go 1.19+ using:
+Built with Go 1.21+ using:
 - **Gin**: HTTP web framework
+- **slog**: Structured logging (Go standard library)
+- **lumberjack**: Automatic log rotation
 - **fsnotify**: File system monitoring
 - **Crypto**: RSA key generation and validation
 

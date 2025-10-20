@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -119,7 +119,9 @@ func handleRegistrationRequest(c *gin.Context, config Config) {
 	// Create the request file
 	filename, err := createRegistrationRequestFile(clientName, config.RequestsDir)
 	if err != nil {
-		log.Printf("Failed to create registration request for %s: %v", clientName, err)
+		slog.Warn("Failed to create registration request",
+			"client_name", clientName,
+			"error", err)
 
 		// Check if this is a "file already exists" error
 		if strings.Contains(err.Error(), "registration request already exists") {
@@ -136,7 +138,9 @@ func handleRegistrationRequest(c *gin.Context, config Config) {
 		return
 	}
 
-	log.Printf("Registration request created for client: %s (file: %s)", clientName, filename)
+	slog.Info("Registration request created",
+		"client_name", clientName,
+		"file", filename)
 	c.JSON(200, RegistrationRequestResponse{
 		Success: true,
 		Message: fmt.Sprintf("Registration request created successfully. Admin must edit the OneTimeKey in the file and move it to the registration directory."),
