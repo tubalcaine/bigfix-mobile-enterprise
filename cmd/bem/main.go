@@ -115,10 +115,16 @@ func main() {
 	// Create Gin router with custom middleware
 	r := gin.New()
 
-	// Add our custom middleware
+	// Configure Gin to write to our log destinations (console and/or file)
+	gin.DefaultWriter = GetGinLogWriter()
+	gin.DefaultErrorWriter = GetGinLogWriter()
+
+	// Add Gin's default logger middleware (provides colorized [GIN] logs)
+	r.Use(gin.LoggerWithWriter(GetGinLogWriter()))
+
+	// Add recovery and error logging middleware
 	logger := GetLogger()
 	r.Use(RecoveryMiddleware(logger))
-	r.Use(RequestLoggingMiddleware(logger))
 	r.Use(ErrorLoggingMiddleware(logger))
 
 	// Set up all routes

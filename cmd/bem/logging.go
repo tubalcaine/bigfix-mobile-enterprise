@@ -11,6 +11,7 @@ import (
 )
 
 var logger *slog.Logger
+var ginLogWriter io.Writer
 
 // InitLogger sets up the global logger with optional file rotation
 func InitLogger(config Config) error {
@@ -85,6 +86,9 @@ func InitLogger(config Config) error {
 	// Set as default logger
 	slog.SetDefault(logger)
 
+	// Set up Gin log writer (same destination as slog)
+	ginLogWriter = writer
+
 	logger.Info("Logger initialized",
 		"level", level.String(),
 		"debug_mode", config.Debug != 0,
@@ -103,4 +107,12 @@ func GetLogger() *slog.Logger {
 		return slog.Default()
 	}
 	return logger
+}
+
+// GetGinLogWriter returns the writer for Gin logging
+func GetGinLogWriter() io.Writer {
+	if ginLogWriter == nil {
+		return os.Stdout
+	}
+	return ginLogWriter
 }
