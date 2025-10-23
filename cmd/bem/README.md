@@ -98,13 +98,37 @@ The BEM (BigFix Enterprise Mobile) server is the main application component that
 
 Access via the server console after starting:
 
+### Cache Management Commands
+
+**`cache`** - Display detailed cache information with pagination
+- Shows all cached URLs for each server with comprehensive metadata
+- **Displays per-item details:**
+  - MaxAge: Cache lifetime in seconds
+  - Content Hash: MD5 hash (truncated for readability)
+  - Remaining Time: Seconds until expiration (0 if expired)
+  - Hit Count: Number of times served from cache
+  - Miss Count: Number of times fetched from server
+- **Pagination controls:**
+  - Press **ENTER** to show next page (10 items per page)
+  - Type **'c' then ENTER** to continue without pausing (dump all remaining items)
+
+**`summary`** - Show comprehensive cache statistics
+- **Per-server statistics:**
+  - Total item counts (total, expired, current)
+  - RAM usage (KB and MB)
+  - **MaxAge range:** Minimum and maximum cache lifetimes
+  - **Cache hits:** Total number of cache hits across all items
+  - **Cache misses:** Total number of cache misses requiring server fetches
+- Useful for identifying cache performance and optimization opportunities
+
+### Other Commands
+
 | Command | Description | Output |
 |---------|-------------|--------|
-| `cache` | Display cached BigFix data | Lists all cached URLs by server |
-| `summary` | Show cache statistics | Item counts, sizes, expiration info |
 | `write` | Export cache to file | Prompts for filename, writes JSON |
 | `makekey` | Generate RSA key pair | Creates `.key` and `.pub` files |
 | `registrations` | Show registration status | Lists OTPs, clients, and sessions |
+| `reload` | Re-populate cache | Fetches core types from all servers |
 | `help` | Display available commands | Command descriptions |
 | `exit` | Terminate server | Graceful shutdown |
 | `<url>` | Query specific URL | Retrieve and display cached response |

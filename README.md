@@ -173,8 +173,53 @@ Each server in the `bigfix_servers` array supports:
 
 When the BEM server is running, you can use these interactive commands:
 
-- `cache` - Display all cached URLs for each server
-- `summary` - Show cache statistics (item counts, memory usage)
+### Cache Management Commands
+
+**`cache`** - Display detailed cache information with pagination
+- Shows all cached URLs for each server with comprehensive metadata
+- **Displays per-item details:**
+  - MaxAge: Cache lifetime in seconds
+  - Content Hash: MD5 hash (truncated for readability)
+  - Remaining Time: Seconds until expiration (0 if expired)
+  - Hit Count: Number of times served from cache
+  - Miss Count: Number of times fetched from server
+- **Pagination controls:**
+  - Press **ENTER** to show next page (10 items per page)
+  - Type **'c' then ENTER** to continue without pausing (dump all remaining items)
+- Example output:
+  ```
+  === Server: https://bigfix-server:52311 ===
+
+    URL: https://bigfix-server:52311/api/sites
+      MaxAge: 600 seconds
+      Content Hash: a1b2c3d4e5f6...
+      Remaining Time: 245 seconds
+      Hit Count: 42
+      Miss Count: 3
+
+  --- Showing 10 of 50 items. Press ENTER for more, or 'c' then ENTER to continue without pausing:
+  ```
+
+**`summary`** - Show comprehensive cache statistics
+- **Per-server statistics:**
+  - Total item counts (total, expired, current)
+  - RAM usage (KB and MB)
+  - **MaxAge range:** Minimum and maximum cache lifetimes
+  - **Cache hits:** Total number of cache hits across all items
+  - **Cache misses:** Total number of cache misses requiring server fetches
+- Useful for identifying cache performance and optimization opportunities
+- Example output:
+  ```
+  For server https://bigfix-server:52311
+      We have:
+          150 total items, 12 expired, 138 current
+          RAM usage: 2048.50 KB (2.00 MB)
+          MaxAge range: 300 to 7200 seconds
+          Cache hits: 1250, Cache misses: 175
+  ```
+
+### Other Commands
+
 - `write` - Export cache to a JSON file
 - `makekey` - Generate a new RSA key pair for testing
 - `registrations` - Display registration requests, clients, and active sessions

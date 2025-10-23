@@ -36,7 +36,12 @@ type BigFixServerCache struct {
 type CacheItem struct {
     Json         string              // Cached JSON response
     RawXML       string             // Original XML response
-    Timestamp    int64              // Unix timestamp
+    Timestamp    int64              // Unix timestamp of cache entry creation
+    MaxAge       uint64             // Current maximum age in seconds
+    BaseMaxAge   uint64             // Base maximum age from server config
+    ContentHash  string             // MD5 hash of raw server response
+    HitCount     uint64             // Number of times served from cache
+    MissCount    uint64             // Number of times fetched from server
 }
 ```
 
@@ -167,6 +172,43 @@ if time.Now().Unix()-item.Timestamp > int64(server.MaxAge) {
 }
 ```
 
+### Dynamic Cache Extension
+
+When a cache item expires, the library fetches fresh data and compares the content:
+
+- **Content Unchanged** (matching MD5 hash):
+  - Cache lifetime is extended (MaxAge increases)
+  - Maximum lifetime enforced by `max_cache_lifetime` config setting
+  - Timestamp is updated to current time
+  - HitCount increments on each cached access
+
+- **Content Changed** (different hash):
+  - Cache is replaced with new data
+  - MaxAge resets to `BaseMaxAge` value
+  - Timestamp resets to current time
+  - MissCount increments on server fetch
+
+This intelligent extension minimizes unnecessary BigFix server requests for stable data while ensuring fresh content is always served when changes occur.
+
+### Cache Hit/Miss Tracking
+
+The cache maintains comprehensive performance metrics:
+
+- **HitCount**: Incremented each time valid cached data is returned
+- **MissCount**: Incremented when data needs to be fetched from the server
+- Counters persist across cache updates and garbage collection
+- Useful for analyzing access patterns and optimizing `maxage` settings
+- Available via CLI `summary` and `cache` commands for performance analysis
+
+### Garbage Collection
+
+The BEM server runs periodic garbage collection based on `garbage_collector_interval`:
+
+- Clears JSON data from expired cache items to free memory
+- Preserves metadata (including hit/miss counts) for future cache hits
+- Expired items can still be extended if content hasn't changed
+- No data loss - expired items are refreshed on next access
+
 ### Population Strategy
 
 **Core Types Auto-Population:**
@@ -177,7 +219,7 @@ if time.Now().Unix()-item.Timestamp > int64(server.MaxAge) {
 **On-Demand Caching:**
 - First request fetches and caches
 - Subsequent requests served from cache
-- Automatic background refresh
+- Automatic background refresh with intelligent extension
 
 ## Performance Features
 
@@ -186,6 +228,7 @@ if time.Now().Unix()-item.Timestamp > int64(server.MaxAge) {
 - **Lazy Cleanup**: Expired items removed during access
 - **Size Monitoring**: Cache size tracking and reporting
 - **Efficient Storage**: Minimal memory overhead per cache item
+- **Garbage Collection**: Periodic cleanup of expired JSON data while preserving metadata
 
 ### Network Optimization
 
@@ -193,6 +236,14 @@ if time.Now().Unix()-item.Timestamp > int64(server.MaxAge) {
 - **Compression**: Automatic gzip support
 - **Batching**: Multiple queries per connection when possible
 - **Parallel Processing**: Concurrent server requests
+- **Intelligent Caching**: Dynamic cache extension for unchanged content reduces server load
+
+### Performance Monitoring
+
+- **Hit/Miss Tracking**: Per-item statistics for cache effectiveness analysis
+- **MaxAge Range Analysis**: Identify shortest and longest cache lifetimes
+- **RAM Usage Reporting**: Track memory consumption per server
+- **CLI Diagnostics**: Real-time performance insights via `summary` and `cache` commands
 
 ## Error Handling
 

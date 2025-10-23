@@ -156,13 +156,102 @@ func main() {
 		}
 
 		if query == "cache" {
+			const itemsPerPage = 10
+
 			cache.ServerCache.Range(func(key, value interface{}) bool {
 				server := value.(*bfrest.BigFixServerCache)
-				fmt.Println(server.ServerName)
+				fmt.Printf("\n=== Server: %s ===\n", server.ServerName)
+
+				// Collect all cache items first for pagination
+				type cacheEntry struct {
+					url  string
+					item *bfrest.CacheItem
+				}
+				var entries []cacheEntry
+
 				server.CacheMap.Range(func(key, value interface{}) bool {
-					fmt.Printf("\t%s\n", key.(string))
+					entries = append(entries, cacheEntry{
+						url:  key.(string),
+						item: value.(*bfrest.CacheItem),
+					})
 					return true
 				})
+
+				totalItems := len(entries)
+				if totalItems == 0 {
+					fmt.Println("  (no cache items)")
+					return true
+				}
+
+				// Display items with pagination
+				for i, entry := range entries {
+					// Calculate remaining time
+					now := time.Now().Unix()
+					age := now - entry.item.Timestamp
+					remaining := int64(entry.item.MaxAge) - age
+					if remaining < 0 {
+						remaining = 0
+					}
+
+					// Truncate hash for display
+					hashDisplay := entry.item.ContentHash
+					if len(hashDisplay) > 12 {
+						hashDisplay = hashDisplay[:12] + "..."
+					}
+
+					fmt.Printf("\n  URL: %s\n", entry.url)
+					fmt.Printf("    MaxAge: %d seconds\n", entry.item.MaxAge)
+					fmt.Printf("    Content Hash: %s\n", hashDisplay)
+					fmt.Printf("    Remaining Time: %d seconds %s\n", remaining, func() string {
+						if remaining == 0 {
+							return "(EXPIRED)"
+						}
+						return ""
+					}())
+					fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
+					fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
+
+					// Check if we should pause for pagination
+					itemNum := i + 1
+					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
+						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue without pausing: ", itemNum, totalItems)
+						var input string
+						fmt.Scanln(&input)
+						if strings.ToLower(strings.TrimSpace(input)) == "c" {
+							fmt.Println("(continuing without pagination...)")
+							// Set itemsPerPage to a very large number to skip future pauses
+							// We can't modify the const, so we'll just break and print remaining
+							for j := i + 1; j < len(entries); j++ {
+								entry := entries[j]
+								now := time.Now().Unix()
+								age := now - entry.item.Timestamp
+								remaining := int64(entry.item.MaxAge) - age
+								if remaining < 0 {
+									remaining = 0
+								}
+
+								hashDisplay := entry.item.ContentHash
+								if len(hashDisplay) > 12 {
+									hashDisplay = hashDisplay[:12] + "..."
+								}
+
+								fmt.Printf("\n  URL: %s\n", entry.url)
+								fmt.Printf("    MaxAge: %d seconds\n", entry.item.MaxAge)
+								fmt.Printf("    Content Hash: %s\n", hashDisplay)
+								fmt.Printf("    Remaining Time: %d seconds %s\n", remaining, func() string {
+									if remaining == 0 {
+										return "(EXPIRED)"
+									}
+									return ""
+								}())
+								fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
+								fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
+							}
+							break
+						}
+					}
+				}
+				fmt.Println()
 
 				return true
 			})
@@ -292,10 +381,33 @@ func main() {
 				fmt.Printf("For server %s\n\tWe have:\n", server.ServerName)
 				count, current, expired := 0, 0, 0
 				var ramBytes int64
+				var totalHits, totalMisses uint64
+				var maxAge, minAge uint64
+				firstItem := true
+
 				server.CacheMap.Range(func(key, value interface{}) bool {
 					v := value.(*bfrest.CacheItem)
 					count++
 					ramBytes += int64(len(v.Json))
+
+					// Track hits and misses
+					totalHits += v.HitCount
+					totalMisses += v.MissCount
+
+					// Track MaxAge min/max
+					if firstItem {
+						maxAge = v.MaxAge
+						minAge = v.MaxAge
+						firstItem = false
+					} else {
+						if v.MaxAge > maxAge {
+							maxAge = v.MaxAge
+						}
+						if v.MaxAge < minAge {
+							minAge = v.MaxAge
+						}
+					}
+
 					if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
 						expired++
 					} else {
@@ -308,7 +420,9 @@ func main() {
 				ramKB := float64(ramBytes) / 1024.0
 				ramMB := ramKB / 1024.0
 				fmt.Printf("\t\t%d total items, %d expired, %d current\n", count, expired, current)
-				fmt.Printf("\t\tRAM usage: %.2f KB (%.2f MB)\n\n", ramKB, ramMB)
+				fmt.Printf("\t\tRAM usage: %.2f KB (%.2f MB)\n", ramKB, ramMB)
+				fmt.Printf("\t\tMaxAge range: %d to %d seconds\n", minAge, maxAge)
+				fmt.Printf("\t\tCache hits: %d, Cache misses: %d\n\n", totalHits, totalMisses)
 
 				return true
 			})
