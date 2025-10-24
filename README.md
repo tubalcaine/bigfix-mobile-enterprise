@@ -221,7 +221,6 @@ When the BEM server is running, you can use these interactive commands:
 ### Other Commands
 
 - `write` - Export cache to a JSON file
-- `makekey` - Generate a new RSA key pair for testing
 - `registrations` - Display registration requests, clients, and active sessions
 - `reload` - Re-populate cache with core types from all servers
 - `help` - Display available commands

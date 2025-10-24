@@ -7,8 +7,7 @@ import (
 
 // Application metadata
 var (
-	app_version = "0.1"
-	app_desc    = "BigFix Enterprise Mobile Server"
+	app_desc = "BigFix Enterprise Mobile Server"
 )
 
 // Configuration structures

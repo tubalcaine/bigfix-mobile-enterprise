@@ -1,11 +1,7 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -20,7 +16,14 @@ import (
 
 func main() {
 	configFile := flag.String("c", "./bem.json", "Path to the config file")
+	showVersion := flag.Bool("version", false, "Display version information and exit")
 	flag.Parse()
+
+	// Handle --version flag
+	if *showVersion {
+		fmt.Println(VersionString())
+		os.Exit(0)
+	}
 
 	if *configFile == "" {
 		slog.Error("Config file not provided")
@@ -51,7 +54,9 @@ func main() {
 
 	slog.Info("Starting application",
 		"name", app_desc,
-		"version", app_version)
+		"version", ShortVersion(),
+		"build_date", BuildDate,
+		"commit", GitCommit)
 
 	// Set up configuration directory for persistent storage
 	configDir = filepath.Dir(*configFile)
@@ -258,70 +263,6 @@ func main() {
 			continue
 		}
 
-		if query == "makekey" {
-			fmt.Println("Enter the key file name:")
-			var keyFileName string
-			fmt.Scanln(&keyFileName)
-
-			// Handle the case where key size is not provided in the config file
-			keySize := config.KeySize
-			if keySize == 0 {
-				keySize = 2048
-			}
-			privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
-			if err != nil {
-				fmt.Println("Error generating private key:", err)
-				continue
-			}
-
-			publicKey := &privateKey.PublicKey
-
-			// Save private key to file
-			privateKeyFile, err := os.Create(keyFileName + ".key")
-			if err != nil {
-				fmt.Println("Error creating private key file:", err)
-				continue
-			}
-			defer privateKeyFile.Close()
-
-			privateKeyPEM := &pem.Block{
-				Type:  "RSA PRIVATE KEY",
-				Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-			}
-			err = pem.Encode(privateKeyFile, privateKeyPEM)
-			if err != nil {
-				fmt.Println("Error encoding private key:", err)
-				continue
-			}
-
-			// Save public key to file
-			publicKeyFile, err := os.Create(keyFileName + ".pub")
-			if err != nil {
-				fmt.Println("Error creating public key file:", err)
-				continue
-			}
-			defer publicKeyFile.Close()
-
-			publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
-			if err != nil {
-				fmt.Println("Error marshaling public key:", err)
-				continue
-			}
-
-			publicKeyPEM := &pem.Block{
-				Type:  "PUBLIC KEY",
-				Bytes: publicKeyBytes,
-			}
-			err = pem.Encode(publicKeyFile, publicKeyPEM)
-			if err != nil {
-				fmt.Println("Error encoding public key:", err)
-				continue
-			}
-
-			fmt.Println("Key pair generated successfully.")
-			continue
-		}
-
 		if query == "write" {
 			fmt.Println("Enter the file name:")
 			var fileName string
@@ -510,7 +451,6 @@ func main() {
 			fmt.Println("\tcache - display the current cache")
 			fmt.Println("\tsummary - display a summary of the cache")
 			fmt.Println("\twrite - write the cache to a file")
-			fmt.Println("\tmakekey - generate a new RSA key pair for client authentication")
 			fmt.Println("\tregistrations - display registration requests, clients, and sessions")
 			fmt.Println("\treload - re-populate cache with core types from all servers")
 			fmt.Println("\thelp - display this help")

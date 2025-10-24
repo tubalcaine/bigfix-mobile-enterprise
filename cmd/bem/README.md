@@ -126,7 +126,6 @@ Access via the server console after starting:
 | Command | Description | Output |
 |---------|-------------|--------|
 | `write` | Export cache to file | Prompts for filename, writes JSON |
-| `makekey` | Generate RSA key pair | Creates `.key` and `.pub` files |
 | `registrations` | Show registration status | Lists OTPs, clients, and sessions |
 | `reload` | Re-populate cache | Fetches core types from all servers |
 | `help` | Display available commands | Command descriptions |

@@ -266,8 +266,8 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		var updatedItem *CacheItem
 
 		if hashMatches {
-			// Content unchanged - restore Json (if it was cleared) and extend MaxAge
-			newMaxAge := cm.MaxAge + cm.BaseMaxAge
+			// Content unchanged - restore Json (if it was cleared) and double MaxAge
+			newMaxAge := cm.MaxAge + cm.MaxAge // Double the current MaxAge
 			if newMaxAge > cache.MaxCacheLifetime {
 				if cache.Debug != 0 {
 					fmt.Fprintf(os.Stderr, "  MaxAge extension capped: would be %d, capping to %d (MaxCacheLifetime)\n",
@@ -278,7 +278,7 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 
 			if cache.Debug != 0 {
 				fmt.Fprintf(os.Stderr, "  HASH MATCHED - Content unchanged!\n")
-				fmt.Fprintf(os.Stderr, "    Extending MaxAge: %d + %d = %d\n", cm.MaxAge, cm.BaseMaxAge, newMaxAge)
+				fmt.Fprintf(os.Stderr, "    Doubling MaxAge: %d + %d = %d\n", cm.MaxAge, cm.MaxAge, newMaxAge)
 				fmt.Fprintf(os.Stderr, "    Restoring JSON: %d bytes\n", len(newItem.Json))
 			}
 
@@ -362,7 +362,7 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 	cm.HitCount++
 
 	if cache.Debug != 0 {
-		fmt.Fprintf(os.Stderr, "  --> Cache hit - returning existing item (HitCount=%d)\n", cm.HitCount)
+		fmt.Fprintf(os.Stderr, "  --> Cache hit for %s - returning existing item (HitCount=%d)\n", url, cm.HitCount)
 		fmt.Fprintf(os.Stderr, "=== END CACHE CHECK ===\n\n")
 	}
 

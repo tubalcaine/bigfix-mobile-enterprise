@@ -28,3 +28,15 @@ cmd/bem/wholeCache.json
 cmd/bem/pixel7a.key
 cmd/bem/pixel7a.pub
 cmd/bem/fullCache.json
+
+# Build and release artifacts
+build/
+dist/
+
+# TLS certificates and keys
+*.pem
+
+# Runtime data
+rdp.stderr
+rdp.stdout
+cmd/bem/registrations/
