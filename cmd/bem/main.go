@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chzyer/readline"
 	"github.com/gin-gonic/gin"
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
@@ -166,11 +167,36 @@ func main() {
 		}
 	}()
 
+	// Initialize readline for command history and line editing
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "\nbem> ",
+		HistoryFile:     "/tmp/.bem_history",
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+	})
+	if err != nil {
+		slog.Error("Failed to initialize readline", "error", err)
+		os.Exit(1)
+	}
+	defer rl.Close()
+
+	slog.Info("Interactive CLI started",
+		"prompt", "bem>",
+		"history_file", "/tmp/.bem_history",
+		"tip", "Use up/down arrows for command history, 'exit' to quit")
+
 	// loop and wait for input so the program doesn't exit.
 	for {
-		fmt.Println("\n\nEnter a url or command (exit to terminate): ")
-		var query string
-		fmt.Scanln(&query)
+		query, err := rl.Readline()
+		if err != nil { // io.EOF, readline.ErrInterrupt
+			break
+		}
+
+		query = strings.TrimSpace(query)
+
+		if query == "" {
+			continue // Skip empty lines
+		}
 
 		if query == "exit" {
 			break
@@ -235,9 +261,12 @@ func main() {
 					// Check if we should pause for pagination
 					itemNum := i + 1
 					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
-						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue without pausing: ", itemNum, totalItems)
-						var input string
-						fmt.Scanln(&input)
+						rl.SetPrompt(fmt.Sprintf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue: ", itemNum, totalItems))
+						input, err := rl.Readline()
+						rl.SetPrompt("\nbem> ") // Reset prompt
+						if err != nil {
+							break
+						}
 						if strings.ToLower(strings.TrimSpace(input)) == "c" {
 							fmt.Println("(continuing without pagination...)")
 							// Set itemsPerPage to a very large number to skip future pauses
@@ -280,9 +309,18 @@ func main() {
 		}
 
 		if query == "write" {
-			fmt.Println("Enter the file name:")
-			var fileName string
-			fmt.Scanln(&fileName)
+			rl.SetPrompt("Enter the file name: ")
+			fileName, err := rl.Readline()
+			rl.SetPrompt("\nbem> ") // Reset prompt
+			if err != nil {
+				fmt.Println("Error reading filename")
+				continue
+			}
+			fileName = strings.TrimSpace(fileName)
+			if fileName == "" {
+				fmt.Println("Filename cannot be empty")
+				continue
+			}
 
 			file, err := os.Create(fileName)
 			if err != nil {
