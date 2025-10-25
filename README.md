@@ -102,7 +102,7 @@ The server uses JSON configuration files (`bem.json`) with the following options
 ### Core Settings
 - `listen_port` - HTTPS server port (default: 17967)
 - `keysize` - RSA key size for client registration (default: 2048)
-- `debug` - Debug logging control (0 = off, non-zero = on)
+- `debug` - **DEPRECATED**: Use `log_level` instead. Debug logging control (0 = off, non-zero = on)
 
 ### Cache Settings
 - `app_cache_timeout` - Global cache timeout in seconds (0 = use per-server settings)
@@ -121,6 +121,7 @@ The server uses JSON configuration files (`bem.json`) with the following options
 **Note**: The BEM server operates in HTTPS-only mode. TLS certificate and key must be provided. HTTP connections are not supported.
 
 ### Logging Configuration
+- `log_level` - Log verbosity: `"DEBUG"`, `"INFO"`, `"WARN"`, or `"ERROR"` (default: "INFO")
 - `log_to_file` - Enable file logging (default: false)
 - `log_file_path` - Path to log file (default: "./logs/bem.log")
 - `log_max_size_mb` - Maximum log file size in MB before rotation (default: 100)
@@ -159,6 +160,7 @@ Each server in the `bigfix_servers` array supports:
   "key_path": "./bem-key.pem",
   "registration_dir": "./registrations",
   "requests_dir": "./requests",
+  "log_level": "INFO",
   "log_to_file": true,
   "log_file_path": "./logs/bem.log",
   "log_max_size_mb": 50,
@@ -232,24 +234,37 @@ The BEM server uses Go's standard `log/slog` library for structured logging with
 
 ### Log Levels
 
-Logging behavior is controlled via the `debug` configuration setting:
+Logging behavior is controlled via the `log_level` configuration setting. The BEM server supports four syslog-style log levels:
 
-**Debug Mode (`"debug": 1`):**
-- DEBUG level messages (detailed diagnostics)
-- INFO level messages (operational information)
-- WARN level messages (warnings and non-critical issues)
-- ERROR level messages (errors and failures)
-- Source code locations included in logs
-- TLS handshake details
-- HTTP request/response details
-- Cache operation details
+**DEBUG (`"log_level": "DEBUG"`):**
+- Most verbose logging for troubleshooting
+- Includes: DEBUG, INFO, WARN, and ERROR messages
+- Source code locations included in all log messages
+- Shows TLS handshake details, HTTP request/response details, cache operation details
+- Recommended for development and troubleshooting
 
-**Production Mode (`"debug": 0`):**
-- INFO level messages and above
-- WARN level messages
-- ERROR level messages
-- No source code locations
-- Reduced verbosity for performance
+**INFO (`"log_level": "INFO"`)** - Default:
+- Standard operational logging
+- Includes: INFO, WARN, and ERROR messages
+- Server startup/shutdown, configuration, API requests, registration events
+- Recommended for production
+
+**WARN (`"log_level": "WARN"`):**
+- Warnings and errors only
+- Includes: WARN and ERROR messages
+- Non-critical issues, deprecated features, recoverable errors
+- Recommended for quiet production systems
+
+**ERROR (`"log_level": "ERROR"`):**
+- Errors only
+- Shows only: ERROR messages
+- Critical failures, unrecoverable errors
+- Use for production systems where only failures need attention
+
+**Backward Compatibility:**
+The deprecated `debug` field is still supported. If `log_level` is not specified:
+- `"debug": 1` behaves as `"log_level": "DEBUG"`
+- `"debug": 0` behaves as `"log_level": "INFO"`
 
 ### Structured Logging
 
@@ -343,18 +358,21 @@ Use the `/summary` endpoint for aggregate statistics including memory usage.
 ## Troubleshooting
 
 ### Debug Mode
-Enable debug logging (`"debug": 1`) to diagnose issues with:
+Enable debug logging (`"log_level": "DEBUG"`) to diagnose issues with:
 - Client authentication failures
 - Registration processing errors
 - Cache misses or failures
 - Server connection problems
+- TLS handshake errors
+
+Debug mode includes source code locations in log messages for easier troubleshooting.
 
 ### Common Issues
 
 **Registration not working:**
 - Check that `registration_dir` exists and is writable
 - Verify OTP file format is correct JSON
-- Enable debug logging to see file processing errors
+- Set `"log_level": "DEBUG"` to see file processing errors
 
 **Cache not populating:**
 - Verify BigFix server credentials in configuration
@@ -364,7 +382,7 @@ Enable debug logging (`"debug": 1`) to diagnose issues with:
 **Authentication failures:**
 - Verify client private key matches registered public key
 - Check if client registration has expired
-- Enable debug logging to see authentication attempts
+- Set `"log_level": "DEBUG"` to see authentication attempts
 
 ## Development
 

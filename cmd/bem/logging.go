@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -17,16 +18,34 @@ var ginLogWriter io.Writer
 func InitLogger(config Config) error {
 	var level slog.Level
 
-	if config.Debug != 0 {
-		level = slog.LevelDebug
+	// Determine log level: prefer log_level field, fallback to debug field for backward compatibility
+	if config.LogLevel != "" {
+		// Parse log_level string (case-insensitive)
+		switch strings.ToUpper(config.LogLevel) {
+		case "DEBUG":
+			level = slog.LevelDebug
+		case "INFO":
+			level = slog.LevelInfo
+		case "WARN", "WARNING":
+			level = slog.LevelWarn
+		case "ERROR":
+			level = slog.LevelError
+		default:
+			return fmt.Errorf("invalid log_level '%s': must be DEBUG, INFO, WARN, or ERROR", config.LogLevel)
+		}
 	} else {
-		level = slog.LevelInfo
+		// Backward compatibility: use Debug field if log_level not set
+		if config.Debug != 0 {
+			level = slog.LevelDebug
+		} else {
+			level = slog.LevelInfo
+		}
 	}
 
 	// Create a handler with custom options
 	handlerOpts := &slog.HandlerOptions{
 		Level:     level,
-		AddSource: config.Debug != 0,
+		AddSource: level == slog.LevelDebug, // Add source file/line info in DEBUG mode
 	}
 
 	// Determine output destination(s)
@@ -86,16 +105,28 @@ func InitLogger(config Config) error {
 	// Set as default logger
 	slog.SetDefault(logger)
 
-	// Set up Gin log writer (same destination as slog)
-	ginLogWriter = writer
+	// Set up Gin log writer - ALWAYS goes to console for colorized [GIN] HTTP request logs
+	// This is separate from slog structured logging which respects log_to_file/log_to_console settings
+	ginLogWriter = os.Stdout
 
-	logger.Info("Logger initialized",
+	// Build log message attributes
+	logAttrs := []any{
 		"level", level.String(),
-		"debug_mode", config.Debug != 0,
 		"log_to_file", config.LogToFile,
-		"log_file_path", config.LogFilePath,
-		"log_to_console", config.LogToConsole,
-	)
+	}
+	if config.LogToFile {
+		logAttrs = append(logAttrs, "log_file_path", config.LogFilePath)
+	}
+	logAttrs = append(logAttrs, "log_to_console", config.LogToConsole)
+
+	// Show which config field determined the log level
+	if config.LogLevel != "" {
+		logAttrs = append(logAttrs, "log_level_source", "log_level field")
+	} else if config.Debug != 0 {
+		logAttrs = append(logAttrs, "log_level_source", "debug field (deprecated)")
+	}
+
+	logger.Info("Logger initialized", logAttrs...)
 
 	return nil
 }

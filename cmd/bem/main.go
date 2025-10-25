@@ -95,7 +95,20 @@ func main() {
 	}()
 
 	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
-	cache.Debug = config.Debug
+
+	// Set cache debug output based on log level
+	// Cache debug is enabled only when log level is DEBUG
+	if config.LogLevel != "" {
+		// Use log_level field if set
+		if strings.ToUpper(config.LogLevel) == "DEBUG" {
+			cache.Debug = 1
+		} else {
+			cache.Debug = 0
+		}
+	} else {
+		// Backward compatibility: fallback to debug field if log_level not set
+		cache.Debug = config.Debug
+	}
 
 	slog.Info("Initializing BigFix server connections",
 		"server_count", len(config.BigFixServers))
@@ -112,23 +125,26 @@ func main() {
 	// Start the garbage collector after cache is initialized with servers
 	cache.StartGarbageCollector(config.GarbageCollectorInterval)
 
-	// Set Gin to release mode if not in debug
-	if config.Debug == 0 {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	// Keep Gin in debug mode (default) to enable colorized [GIN] HTTP request logs
+	// These logs always go to console regardless of log_level setting
+	// Note: This is separate from application log level which controls slog output
 
 	// Create Gin router with custom middleware
 	r := gin.New()
 
-	// Configure Gin to write to our log destinations (console and/or file)
-	gin.DefaultWriter = GetGinLogWriter()
-	gin.DefaultErrorWriter = GetGinLogWriter()
+	// Configure Gin to always write colorized HTTP request logs to console
+	gin.DefaultWriter = GetGinLogWriter()       // Always os.Stdout
+	gin.DefaultErrorWriter = GetGinLogWriter()  // Always os.Stdout
 
-	// Add Gin's default logger middleware (provides colorized [GIN] logs)
+	// Add Gin's default logger middleware (provides colorized [GIN] HTTP request logs to console)
 	r.Use(gin.LoggerWithWriter(GetGinLogWriter()))
 
-	// Add recovery and error logging middleware
+	// Add structured slog request logging middleware (logs all requests at INFO level via slog)
+	// This goes to file/console based on log_to_file/log_to_console settings
 	logger := GetLogger()
+	r.Use(RequestLoggingMiddleware(logger))
+
+	// Add recovery and error logging middleware
 	r.Use(RecoveryMiddleware(logger))
 	r.Use(ErrorLoggingMiddleware(logger))
 
