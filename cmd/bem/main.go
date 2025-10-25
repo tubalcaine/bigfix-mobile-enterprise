@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -263,9 +264,8 @@ func main() {
 					itemNum := i + 1
 					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
 						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue: ", itemNum, totalItems)
-						rl.SetPrompt("")
-						input, err := rl.Readline()
-						rl.SetPrompt("bem> ") // Reset prompt
+						reader := bufio.NewReader(os.Stdin)
+						input, err := reader.ReadString('\n')
 						if err != nil {
 							break
 						}
@@ -312,9 +312,8 @@ func main() {
 
 		if query == "write" {
 			fmt.Print("Enter the file name: ")
-			rl.SetPrompt("")
-			fileName, err := rl.Readline()
-			rl.SetPrompt("bem> ") // Reset prompt
+			reader := bufio.NewReader(os.Stdin)
+			fileName, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading filename")
 				continue
