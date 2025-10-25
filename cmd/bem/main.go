@@ -206,6 +206,7 @@ func main() {
 
 		if query == "cache" {
 			const itemsPerPage = 10
+			noPause := false // Global flag: when true, skip all pagination
 
 			cache.ServerCache.Range(func(key, value interface{}) bool {
 				server := value.(*bfrest.BigFixServerCache)
@@ -260,46 +261,18 @@ func main() {
 					fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
 					fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
 
-					// Check if we should pause for pagination
+					// Check if we should pause for pagination (skip if noPause flag is set)
 					itemNum := i + 1
-					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
-						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue: ", itemNum, totalItems)
+					if !noPause && itemNum%itemsPerPage == 0 && itemNum < totalItems {
+						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to show all remaining items: ", itemNum, totalItems)
 						reader := bufio.NewReader(os.Stdin)
 						input, err := reader.ReadString('\n')
 						if err != nil {
 							break
 						}
 						if strings.ToLower(strings.TrimSpace(input)) == "c" {
-							fmt.Println("(continuing without pagination...)")
-							// Set itemsPerPage to a very large number to skip future pauses
-							// We can't modify the const, so we'll just break and print remaining
-							for j := i + 1; j < len(entries); j++ {
-								entry := entries[j]
-								now := time.Now().Unix()
-								age := now - entry.item.Timestamp
-								remaining := int64(entry.item.MaxAge) - age
-								if remaining < 0 {
-									remaining = 0
-								}
-
-								hashDisplay := entry.item.ContentHash
-								if len(hashDisplay) > 12 {
-									hashDisplay = hashDisplay[:12] + "..."
-								}
-
-								fmt.Printf("\n  URL: %s\n", entry.url)
-								fmt.Printf("    MaxAge: %d seconds\n", entry.item.MaxAge)
-								fmt.Printf("    Content Hash: %s\n", hashDisplay)
-								fmt.Printf("    Remaining Time: %d seconds %s\n", remaining, func() string {
-									if remaining == 0 {
-										return "(EXPIRED)"
-									}
-									return ""
-								}())
-								fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
-								fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
-							}
-							break
+							fmt.Println("(showing all remaining items without pausing...)")
+							noPause = true // Skip all future pagination prompts across all servers
 						}
 					}
 				}
