@@ -169,7 +169,7 @@ func main() {
 
 	// Initialize readline for command history and line editing
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          "\nbem> ",
+		Prompt:          "bem> ",
 		HistoryFile:     "/tmp/.bem_history",
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
@@ -187,6 +187,7 @@ func main() {
 
 	// loop and wait for input so the program doesn't exit.
 	for {
+		fmt.Println() // Print newline before prompt
 		query, err := rl.Readline()
 		if err != nil { // io.EOF, readline.ErrInterrupt
 			break
@@ -261,9 +262,10 @@ func main() {
 					// Check if we should pause for pagination
 					itemNum := i + 1
 					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
-						rl.SetPrompt(fmt.Sprintf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue: ", itemNum, totalItems))
+						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue: ", itemNum, totalItems)
+						rl.SetPrompt("")
 						input, err := rl.Readline()
-						rl.SetPrompt("\nbem> ") // Reset prompt
+						rl.SetPrompt("bem> ") // Reset prompt
 						if err != nil {
 							break
 						}
@@ -309,9 +311,10 @@ func main() {
 		}
 
 		if query == "write" {
-			rl.SetPrompt("Enter the file name: ")
+			fmt.Print("Enter the file name: ")
+			rl.SetPrompt("")
 			fileName, err := rl.Readline()
-			rl.SetPrompt("\nbem> ") // Reset prompt
+			rl.SetPrompt("bem> ") // Reset prompt
 			if err != nil {
 				fmt.Println("Error reading filename")
 				continue
