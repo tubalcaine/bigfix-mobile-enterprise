@@ -1,7 +1,7 @@
 {
   "app_cache_timeout": 0,
   "keysize": 2048,
-  "debug": 1,
+  "log_level": "INFO",
   "max_cache_lifetime": 86400,
   "garbage_collector_interval": 1,
   "bigfix_servers": [

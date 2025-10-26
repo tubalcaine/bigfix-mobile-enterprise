@@ -179,6 +179,20 @@ func (cache *BigFixCache) silentGet(url string) {
 	}
 }
 
+// silentForceGet is like silentGet but forces a refresh from the server.
+// Used by the reload command to force cache updates even for non-expired items.
+func (cache *BigFixCache) silentForceGet(url string) {
+	res, err := cache.ForceGet(url)
+
+	if res == nil || err != nil {
+		if cache.Debug != 0 {
+			fmt.Fprintf(os.Stderr, "For URL: %s\n", url)
+			fmt.Fprintln(os.Stderr, res)
+			fmt.Fprintf(os.Stderr, "Silent ForceGET failed: %s\n", err)
+		}
+	}
+}
+
 // Get retrieves a cache item for the given URL from the BigFixCache.
 // If the cache item is found and not expired, it is returned as a *CacheItem.
 // If the cache item is not found, expired, or has empty Json, it is retrieved from the server.
@@ -491,7 +505,7 @@ func retrieveBigFixData(urlStr string, sc *BigFixServerCache) (*CacheItem, error
 func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint64) error {
 	var besapi BESAPI
 
-	result, err := cache.Get(serverUrl + "/api/actions")
+	result, err := cache.ForceGet(serverUrl + "/api/actions")
 	if err != nil {
 		return err
 	}
@@ -503,11 +517,11 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 
 	for _, action := range besapi.Action {
 		//		silentGet(action.Resource, username, password)
-		go cache.silentGet(action.Resource)
-		go cache.silentGet(action.Resource + "/status")
+		go cache.silentForceGet(action.Resource)
+		go cache.silentForceGet(action.Resource + "/status")
 	}
 
-	result, err = cache.Get(serverUrl + "/api/computers")
+	result, err = cache.ForceGet(serverUrl + "/api/computers")
 	if err != nil {
 		return err
 	}
@@ -519,10 +533,10 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 
 	for _, computer := range besapi.Computer {
 		//		silentGet(computer.Resource, username, password)
-		go cache.silentGet(computer.Resource)
+		go cache.silentForceGet(computer.Resource)
 	}
 
-	result, err = cache.Get(serverUrl + "/api/sites")
+	result, err = cache.ForceGet(serverUrl + "/api/sites")
 
 	if err != nil {
 		return err
@@ -535,28 +549,191 @@ func (cache *BigFixCache) PopulateCoreTypes(serverUrl string, maxAgeSeconds uint
 
 	for _, site := range besapi.CustomSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource)
-		go cache.silentGet(site.Resource + "/content")
+		go cache.silentForceGet(site.Resource)
+		go cache.silentForceGet(site.Resource + "/content")
 	}
 
 	for _, site := range besapi.ExternalSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource)
-		go cache.silentGet(site.Resource + "/content")
+		go cache.silentForceGet(site.Resource)
+		go cache.silentForceGet(site.Resource + "/content")
 	}
 
 	for _, site := range besapi.OperatorSite {
 		//		silentGet(site.Resource, username, password)
-		go cache.silentGet(site.Resource)
-		go cache.silentGet(site.Resource + "/content")
+		go cache.silentForceGet(site.Resource)
+		go cache.silentForceGet(site.Resource + "/content")
 	}
 
 	if besapi.ActionSite != nil {
-		go cache.silentGet(besapi.ActionSite.Resource)
-		go cache.silentGet(besapi.ActionSite.Resource + "/content")
+		go cache.silentForceGet(besapi.ActionSite.Resource)
+		go cache.silentForceGet(besapi.ActionSite.Resource + "/content")
 	}
 
 	return nil
+}
+
+// ForceGet retrieves data from the cache, forcing a refresh from the server regardless
+// of whether the cached item has expired. This is useful for the "reload" command.
+// If the content hash matches, MaxAge is doubled. If content changed, MaxAge resets to BaseMaxAge.
+func (cache *BigFixCache) ForceGet(url string) (*CacheItem, error) {
+	baseURL := getBaseUrl(url)
+
+	scValue, ok := cache.ServerCache.Load(baseURL)
+
+	// If the BigFixServerCache is not found...
+	if !ok {
+		return nil, fmt.Errorf("server cache does not exist for %s", baseURL)
+	}
+
+	// Make the type assertion and handle failure
+	sc, _ := scValue.(*BigFixServerCache)
+
+	// Check if we have an existing cache item
+	value, ok := sc.CacheMap.Load(url)
+
+	var cm *CacheItem
+
+	if !ok {
+		// No existing cache entry - this is the first time accessing this URL
+		// Treat it like a normal cache miss
+		cm, err := retrieveBigFixData(url, sc)
+		if err != nil {
+			return nil, err
+		}
+		// Initialize with MissCount = 1 for this first request
+		cm.MissCount = 1
+		sc.CacheMap.Store(url, cm)
+		return cm, nil
+	}
+
+	cm, ok = value.(*CacheItem)
+
+	if !ok {
+		return nil, fmt.Errorf("type failure loading cache item for %s", url)
+	}
+
+	// Force refresh - increment MissCount since we're fetching from server
+	cm.MissCount++
+
+	if cache.Debug != 0 {
+		fmt.Fprintf(os.Stderr, "\n=== FORCED CACHE REFRESH for %s ===\n", url)
+		fmt.Fprintf(os.Stderr, "  Current values: Timestamp=%d, MaxAge=%d, BaseMaxAge=%d, JSON length=%d, Hash=%s\n",
+			cm.Timestamp, cm.MaxAge, cm.BaseMaxAge, len(cm.Json), cm.ContentHash[:8])
+		fmt.Fprintf(os.Stderr, "  --> Force refreshing from server... (MissCount=%d)\n", cm.MissCount)
+	}
+
+	// Always fetch fresh data from server
+	newItem, err := retrieveBigFixData(url, sc)
+	if err != nil {
+		return nil, err
+	}
+
+	if cache.Debug != 0 {
+		fmt.Fprintf(os.Stderr, "  Fresh data retrieved: JSON length=%d, Hash=%s\n", len(newItem.Json), newItem.ContentHash[:8])
+	}
+
+	// Determine if content has changed by comparing hashes
+	hashMatches := cm.ContentHash != "" && newItem.ContentHash == cm.ContentHash
+	if cache.Debug != 0 {
+		fmt.Fprintf(os.Stderr, "  Hash comparison: old=%s, new=%s, matches=%v\n",
+			cm.ContentHash[:8], newItem.ContentHash[:8], hashMatches)
+	}
+
+	var updatedItem *CacheItem
+
+	if hashMatches {
+		// Content unchanged - double MaxAge
+		newMaxAge := cm.MaxAge + cm.MaxAge // Double the current MaxAge
+		if newMaxAge > cache.MaxCacheLifetime {
+			if cache.Debug != 0 {
+				fmt.Fprintf(os.Stderr, "  MaxAge extension capped: would be %d, capping to %d (MaxCacheLifetime)\n",
+					newMaxAge, cache.MaxCacheLifetime)
+			}
+			newMaxAge = cache.MaxCacheLifetime
+		}
+
+		if cache.Debug != 0 {
+			fmt.Fprintf(os.Stderr, "  HASH MATCHED - Content unchanged!\n")
+			fmt.Fprintf(os.Stderr, "    Doubling MaxAge: %d + %d = %d\n", cm.MaxAge, cm.MaxAge, newMaxAge)
+			fmt.Fprintf(os.Stderr, "    Updating JSON: %d bytes\n", len(newItem.Json))
+		}
+
+		// Create updated item with extended MaxAge, fresh Json, and same content hash
+		updatedItem = &CacheItem{
+			Timestamp:   time.Now().Unix(),
+			Json:        newItem.Json,
+			MaxAge:      newMaxAge,
+			BaseMaxAge:  cm.BaseMaxAge,
+			ContentHash: cm.ContentHash, // Keep old hash since content matches
+			HitCount:    cm.HitCount,    // Preserve hit count
+			MissCount:   cm.MissCount,   // Preserve miss count
+		}
+
+		if cache.Debug != 0 {
+			fmt.Fprintf(os.Stderr, "  Values to be stored:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d (now)\n", updatedItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", updatedItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", updatedItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(updatedItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", updatedItem.ContentHash[:8])
+		}
+	} else {
+		if cache.Debug != 0 {
+			fmt.Fprintf(os.Stderr, "  HASH CHANGED - Content has changed!\n")
+			fmt.Fprintf(os.Stderr, "    Resetting MaxAge to BaseMaxAge: %d\n", cm.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    Updating hash: %s -> %s\n", cm.ContentHash[:8], newItem.ContentHash[:8])
+		}
+
+		// Content changed - store new data with new hash and reset to BaseMaxAge
+		updatedItem = &CacheItem{
+			Timestamp:   time.Now().Unix(),
+			Json:        newItem.Json,
+			MaxAge:      cm.BaseMaxAge, // Reset to base, not newItem.MaxAge
+			BaseMaxAge:  cm.BaseMaxAge,
+			ContentHash: newItem.ContentHash, // Update to new hash
+			HitCount:    cm.HitCount,         // Preserve hit count
+			MissCount:   cm.MissCount,        // Preserve miss count
+		}
+
+		if cache.Debug != 0 {
+			fmt.Fprintf(os.Stderr, "  Values to be stored:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d (now)\n", updatedItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", updatedItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", updatedItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(updatedItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", updatedItem.ContentHash[:8])
+		}
+	}
+
+	// Store the updated item back to cache
+	if cache.Debug != 0 {
+		fmt.Fprintf(os.Stderr, "  --> Calling CacheMap.Store() to save updated item...\n")
+	}
+	sc.CacheMap.Store(url, updatedItem)
+	if cache.Debug != 0 {
+		fmt.Fprintf(os.Stderr, "  --> Store completed successfully!\n")
+	}
+
+	// Verify the store worked by reading it back
+	if cache.Debug != 0 {
+		verifyValue, verifyOk := sc.CacheMap.Load(url)
+		if verifyOk {
+			verifyItem := verifyValue.(*CacheItem)
+			fmt.Fprintf(os.Stderr, "  VERIFICATION - Read back from cache:\n")
+			fmt.Fprintf(os.Stderr, "    Timestamp:   %d\n", verifyItem.Timestamp)
+			fmt.Fprintf(os.Stderr, "    MaxAge:      %d\n", verifyItem.MaxAge)
+			fmt.Fprintf(os.Stderr, "    BaseMaxAge:  %d\n", verifyItem.BaseMaxAge)
+			fmt.Fprintf(os.Stderr, "    JSON length: %d\n", len(verifyItem.Json))
+			fmt.Fprintf(os.Stderr, "    ContentHash: %s\n", verifyItem.ContentHash[:8])
+		} else {
+			fmt.Fprintf(os.Stderr, "  ERROR: Failed to verify - could not load item back from cache!\n")
+		}
+
+		fmt.Fprintf(os.Stderr, "=== END FORCED CACHE REFRESH ===\n\n")
+	}
+
+	return updatedItem, nil
 }
 
 // StartGarbageCollector starts a background goroutine that periodically sweeps the cache

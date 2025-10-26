@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chzyer/readline"
 	"github.com/gin-gonic/gin"
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
@@ -95,7 +97,20 @@ func main() {
 	}()
 
 	cache := bfrest.GetCache(config.AppCacheTimeout, config.MaxCacheLifetime)
-	cache.Debug = config.Debug
+
+	// Set cache debug output based on log level
+	// Cache debug is enabled only when log level is DEBUG
+	if config.LogLevel != "" {
+		// Use log_level field if set
+		if strings.ToUpper(config.LogLevel) == "DEBUG" {
+			cache.Debug = 1
+		} else {
+			cache.Debug = 0
+		}
+	} else {
+		// Backward compatibility: fallback to debug field if log_level not set
+		cache.Debug = config.Debug
+	}
 
 	slog.Info("Initializing BigFix server connections",
 		"server_count", len(config.BigFixServers))
@@ -112,23 +127,26 @@ func main() {
 	// Start the garbage collector after cache is initialized with servers
 	cache.StartGarbageCollector(config.GarbageCollectorInterval)
 
-	// Set Gin to release mode if not in debug
-	if config.Debug == 0 {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	// Keep Gin in debug mode (default) to enable colorized [GIN] HTTP request logs
+	// These logs always go to console regardless of log_level setting
+	// Note: This is separate from application log level which controls slog output
 
 	// Create Gin router with custom middleware
 	r := gin.New()
 
-	// Configure Gin to write to our log destinations (console and/or file)
-	gin.DefaultWriter = GetGinLogWriter()
-	gin.DefaultErrorWriter = GetGinLogWriter()
+	// Configure Gin to always write colorized HTTP request logs to console
+	gin.DefaultWriter = GetGinLogWriter()       // Always os.Stdout
+	gin.DefaultErrorWriter = GetGinLogWriter()  // Always os.Stdout
 
-	// Add Gin's default logger middleware (provides colorized [GIN] logs)
+	// Add Gin's default logger middleware (provides colorized [GIN] HTTP request logs to console)
 	r.Use(gin.LoggerWithWriter(GetGinLogWriter()))
 
-	// Add recovery and error logging middleware
+	// Add structured slog request logging middleware (logs all requests at INFO level via slog)
+	// This goes to file/console based on log_to_file/log_to_console settings
 	logger := GetLogger()
+	r.Use(RequestLoggingMiddleware(logger))
+
+	// Add recovery and error logging middleware
 	r.Use(RecoveryMiddleware(logger))
 	r.Use(ErrorLoggingMiddleware(logger))
 
@@ -150,11 +168,37 @@ func main() {
 		}
 	}()
 
+	// Initialize readline for command history and line editing
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "bem> ",
+		HistoryFile:     "/tmp/.bem_history",
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+	})
+	if err != nil {
+		slog.Error("Failed to initialize readline", "error", err)
+		os.Exit(1)
+	}
+	defer rl.Close()
+
+	slog.Info("Interactive CLI started",
+		"prompt", "bem>",
+		"history_file", "/tmp/.bem_history",
+		"tip", "Use up/down arrows for command history, 'exit' to quit")
+
 	// loop and wait for input so the program doesn't exit.
 	for {
-		fmt.Println("\n\nEnter a url or command (exit to terminate): ")
-		var query string
-		fmt.Scanln(&query)
+		fmt.Println() // Print newline before prompt
+		query, err := rl.Readline()
+		if err != nil { // io.EOF, readline.ErrInterrupt
+			break
+		}
+
+		query = strings.TrimSpace(query)
+
+		if query == "" {
+			continue // Skip empty lines
+		}
 
 		if query == "exit" {
 			break
@@ -162,6 +206,7 @@ func main() {
 
 		if query == "cache" {
 			const itemsPerPage = 10
+			noPause := false // Global flag: when true, skip all pagination
 
 			cache.ServerCache.Range(func(key, value interface{}) bool {
 				server := value.(*bfrest.BigFixServerCache)
@@ -216,43 +261,18 @@ func main() {
 					fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
 					fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
 
-					// Check if we should pause for pagination
+					// Check if we should pause for pagination (skip if noPause flag is set)
 					itemNum := i + 1
-					if itemNum%itemsPerPage == 0 && itemNum < totalItems {
-						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to continue without pausing: ", itemNum, totalItems)
-						var input string
-						fmt.Scanln(&input)
-						if strings.ToLower(strings.TrimSpace(input)) == "c" {
-							fmt.Println("(continuing without pagination...)")
-							// Set itemsPerPage to a very large number to skip future pauses
-							// We can't modify the const, so we'll just break and print remaining
-							for j := i + 1; j < len(entries); j++ {
-								entry := entries[j]
-								now := time.Now().Unix()
-								age := now - entry.item.Timestamp
-								remaining := int64(entry.item.MaxAge) - age
-								if remaining < 0 {
-									remaining = 0
-								}
-
-								hashDisplay := entry.item.ContentHash
-								if len(hashDisplay) > 12 {
-									hashDisplay = hashDisplay[:12] + "..."
-								}
-
-								fmt.Printf("\n  URL: %s\n", entry.url)
-								fmt.Printf("    MaxAge: %d seconds\n", entry.item.MaxAge)
-								fmt.Printf("    Content Hash: %s\n", hashDisplay)
-								fmt.Printf("    Remaining Time: %d seconds %s\n", remaining, func() string {
-									if remaining == 0 {
-										return "(EXPIRED)"
-									}
-									return ""
-								}())
-								fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
-								fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
-							}
+					if !noPause && itemNum%itemsPerPage == 0 && itemNum < totalItems {
+						fmt.Printf("\n--- Showing %d of %d items. Press ENTER for more, or 'c' then ENTER to show all remaining items: ", itemNum, totalItems)
+						reader := bufio.NewReader(os.Stdin)
+						input, err := reader.ReadString('\n')
+						if err != nil {
 							break
+						}
+						if strings.ToLower(strings.TrimSpace(input)) == "c" {
+							fmt.Println("(showing all remaining items without pausing...)")
+							noPause = true // Skip all future pagination prompts across all servers
 						}
 					}
 				}
@@ -264,9 +284,18 @@ func main() {
 		}
 
 		if query == "write" {
-			fmt.Println("Enter the file name:")
-			var fileName string
-			fmt.Scanln(&fileName)
+			fmt.Print("Enter the file name: ")
+			reader := bufio.NewReader(os.Stdin)
+			fileName, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading filename")
+				continue
+			}
+			fileName = strings.TrimSpace(fileName)
+			if fileName == "" {
+				fmt.Println("Filename cannot be empty")
+				continue
+			}
 
 			file, err := os.Create(fileName)
 			if err != nil {

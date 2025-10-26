@@ -23,9 +23,10 @@ type Config struct {
 	RegistrationDataDir      string         `json:"registration_data_dir"`
 	GarbageCollectorInterval uint64         `json:"garbage_collector_interval"` // seconds between GC sweeps, default 15
 	MaxCacheLifetime         uint64         `json:"max_cache_lifetime"`          // maximum cache lifetime in seconds, default 86400 (24 hours)
-	Debug                    int            `json:"debug"`                       // 0 = debug logging off, non-zero = debug logging on
+	Debug                    int            `json:"debug"`                       // DEPRECATED: use log_level instead. 0 = debug logging off, non-zero = debug logging on
 
 	// Logging configuration
+	LogLevel      string `json:"log_level"`         // log level: "DEBUG", "INFO", "WARN", or "ERROR" (default: "INFO", or "DEBUG" if debug=1)
 	LogToFile     bool   `json:"log_to_file"`       // enable file logging
 	LogFilePath   string `json:"log_file_path"`     // path to log file
 	LogMaxSizeMB  int    `json:"log_max_size_mb"`   // maximum size in megabytes before rotation
