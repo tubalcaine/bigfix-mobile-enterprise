@@ -95,6 +95,56 @@ The `/urls` endpoint returns comprehensive cache metadata along with the request
 
 This metadata enables clients to make informed decisions about cache freshness and reliability.
 
+### `/servers` Endpoint Response Format
+
+The `/servers` endpoint returns a fast list of available BigFix servers:
+
+```json
+{
+  "servers": [
+    {
+      "name": "https://bigfix-server-1:52311",
+      "ram_bytes": 0,
+      "ram_kb": 0.0,
+      "ram_mb": 0.0
+    }
+  ],
+  "number_of_servers": 1
+}
+```
+
+**Note**: RAM fields are present for API compatibility but always return 0. For detailed cache statistics including RAM usage, use the `/summary` endpoint.
+
+### `/summary` Endpoint Response Format
+
+The `/summary` endpoint returns comprehensive cache statistics for all servers:
+
+```json
+{
+  "https://bigfix-server-1:52311": {
+    "total_items": 150,
+    "expired_items": 12,
+    "current_items": 138,
+    "ram_bytes": 2097152,
+    "ram_kb": 2048.0,
+    "ram_mb": 2.0,
+    "max_age_min_seconds": 300,
+    "max_age_max_seconds": 7200,
+    "cache_hits": 1250,
+    "cache_misses": 175
+  },
+  "total_ram_bytes": 2097152,
+  "total_ram_kb": 2048.0,
+  "total_ram_mb": 2.0
+}
+```
+
+This endpoint provides the same detailed statistics as the CLI `summary` command, including:
+- Item counts (total, expired, current)
+- RAM usage per server and total
+- MaxAge range showing minimum and maximum cache lifetimes
+- Cache performance metrics (hits and misses)
+
 ## Configuration
 
 The server uses JSON configuration files (`bem.json`) with the following options:
