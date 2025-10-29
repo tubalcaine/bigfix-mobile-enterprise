@@ -1,0 +1,92 @@
+name: bigfix-mobile-enterprise
+arch: amd64
+platform: linux
+version: v1.0.1
+section: net
+priority: optional
+maintainer: BigFix BEM Development Team
+description: |
+  BigFix Enterprise Mobile (BEM) Server
+  A Go-based caching proxy server for BigFix REST APIs, designed to support
+  mobile applications with multi-server connectivity, client authentication,
+  and intelligent caching.
+vendor: BigFix BEM Project
+homepage: https://github.com/tubalcaine/bigfix-mobile-enterprise
+license: "LICENSE"
+
+contents:
+  # Binary
+  - src: ./build/bem-linux-amd64
+    dst: /usr/local/bin/bem
+    file_info:
+      mode: 0755
+
+  # Documentation
+  - src: ./README.md
+    dst: /usr/share/doc/bigfix-mobile-enterprise/README.md
+    file_info:
+      mode: 0644
+
+  - src: ./LICENSE
+    dst: /usr/share/doc/bigfix-mobile-enterprise/LICENSE
+    file_info:
+      mode: 0644
+
+  - src: ./RELEASE.md
+    dst: /usr/share/doc/bigfix-mobile-enterprise/RELEASE.md
+    file_info:
+      mode: 0644
+
+  # Systemd service file
+  - src: ./packaging/bem.service
+    dst: /usr/lib/systemd/system/bem.service
+    file_info:
+      mode: 0644
+    packager: rpm
+
+  - src: ./packaging/bem.service
+    dst: /lib/systemd/system/bem.service
+    file_info:
+      mode: 0644
+    packager: deb
+
+  # Configuration directory
+  - dst: /etc/bem
+    type: dir
+    file_info:
+      mode: 0755
+
+  # Data directories
+  - dst: /var/lib/bem
+    type: dir
+    file_info:
+      mode: 0755
+
+  - dst: /var/lib/bem/registrations
+    type: dir
+    file_info:
+      mode: 0755
+
+  - dst: /var/lib/bem/requests
+    type: dir
+    file_info:
+      mode: 0755
+
+overrides:
+  deb:
+    depends:
+      - ca-certificates
+    recommends:
+      - openssl
+    scripts:
+      postinstall: ./packaging/postinstall.sh
+      preremove: ./packaging/preremove.sh
+
+  rpm:
+    depends:
+      - ca-certificates
+    recommends:
+      - openssl
+    scripts:
+      postinstall: ./packaging/postinstall.sh
+      preremove: ./packaging/preremove.sh

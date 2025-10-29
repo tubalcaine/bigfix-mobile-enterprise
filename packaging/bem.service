@@ -1,0 +1,28 @@
+[Unit]
+Description=BigFix Enterprise Mobile (BEM) Server
+Documentation=https://github.com/tubalcaine/bigfix-mobile-enterprise
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bem
+Group=bem
+WorkingDirectory=/var/lib/bem
+ExecStart=/usr/local/bin/bem -c /etc/bem/bem.json
+Restart=on-failure
+RestartSec=5s
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bem
+ReadOnlyPaths=/etc/bem
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
