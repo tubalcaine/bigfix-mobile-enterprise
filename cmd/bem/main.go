@@ -16,6 +16,60 @@ import (
 	"github.com/tubalcaine/bigfix-mobile-enterprise/pkg/bfrest"
 )
 
+// formatDuration converts seconds to a human-readable duration string.
+// Examples: "45 seconds", "300 seconds (5 minutes)", "7200 seconds (2 hours)"
+func formatDuration(seconds uint64) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%d seconds", seconds)
+	}
+
+	days := seconds / 86400
+	hours := (seconds % 86400) / 3600
+	minutes := (seconds % 3600) / 60
+	secs := seconds % 60
+
+	var parts []string
+	if days > 0 {
+		if days == 1 {
+			parts = append(parts, "1 day")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d days", days))
+		}
+	}
+	if hours > 0 {
+		if hours == 1 {
+			parts = append(parts, "1 hour")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d hours", hours))
+		}
+	}
+	if minutes > 0 {
+		if minutes == 1 {
+			parts = append(parts, "1 minute")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d minutes", minutes))
+		}
+	}
+	if secs > 0 && len(parts) < 2 {
+		// Only show seconds if we have less than 2 larger units
+		if secs == 1 {
+			parts = append(parts, "1 second")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d seconds", secs))
+		}
+	}
+
+	readable := strings.Join(parts, ", ")
+	return fmt.Sprintf("%d seconds (%s)", seconds, readable)
+}
+
+// formatTimestamp converts a Unix timestamp to a human-readable date/time string.
+// Example: "1698765432 (2024-10-29 14:30:32)"
+func formatTimestamp(unixTime int64) string {
+	t := time.Unix(unixTime, 0)
+	return fmt.Sprintf("%d (%s)", unixTime, t.Format("2006-01-02 15:04:05"))
+}
+
 func main() {
 	configFile := flag.String("c", "./bem.json", "Path to the config file")
 	showVersion := flag.Bool("version", false, "Display version information and exit")
@@ -250,14 +304,13 @@ func main() {
 					}
 
 					fmt.Printf("\n  URL: %s\n", entry.url)
-					fmt.Printf("    MaxAge: %d seconds\n", entry.item.MaxAge)
+					fmt.Printf("    MaxAge: %s\n", formatDuration(entry.item.MaxAge))
 					fmt.Printf("    Content Hash: %s\n", hashDisplay)
-					fmt.Printf("    Remaining Time: %d seconds %s\n", remaining, func() string {
-						if remaining == 0 {
-							return "(EXPIRED)"
-						}
-						return ""
-					}())
+					if remaining == 0 {
+						fmt.Printf("    Remaining Time: 0 seconds (EXPIRED)\n")
+					} else {
+						fmt.Printf("    Remaining Time: %s\n", formatDuration(uint64(remaining)))
+					}
 					fmt.Printf("    Hit Count: %d\n", entry.item.HitCount)
 					fmt.Printf("    Miss Count: %d\n", entry.item.MissCount)
 
@@ -391,8 +444,83 @@ func main() {
 				ramMB := ramKB / 1024.0
 				fmt.Printf("\t\t%d total items, %d expired, %d current\n", count, expired, current)
 				fmt.Printf("\t\tRAM usage: %.2f KB (%.2f MB)\n", ramKB, ramMB)
-				fmt.Printf("\t\tMaxAge range: %d to %d seconds\n", minAge, maxAge)
+				fmt.Printf("\t\tMaxAge range: %s to %s\n", formatDuration(minAge), formatDuration(maxAge))
 				fmt.Printf("\t\tCache hits: %d, Cache misses: %d\n\n", totalHits, totalMisses)
+
+				return true
+			})
+			continue
+		}
+
+		if query == "limits" {
+			cache.ServerCache.Range(func(key, value interface{}) bool {
+				server := value.(*bfrest.BigFixServerCache)
+				fmt.Printf("For server %s\n\tMaxAge Limits:\n\n", server.ServerName)
+
+				var minMaxAgeItem, maxMaxAgeItem *bfrest.CacheItem
+				var minMaxAgeURL, maxMaxAgeURL string
+				firstItem := true
+
+				server.CacheMap.Range(func(key, value interface{}) bool {
+					url := key.(string)
+					item := value.(*bfrest.CacheItem)
+
+					if firstItem {
+						minMaxAgeItem = item
+						minMaxAgeURL = url
+						maxMaxAgeItem = item
+						maxMaxAgeURL = url
+						firstItem = false
+					} else {
+						if item.MaxAge < minMaxAgeItem.MaxAge {
+							minMaxAgeItem = item
+							minMaxAgeURL = url
+						}
+						if item.MaxAge >= maxMaxAgeItem.MaxAge {
+							maxMaxAgeItem = item
+							maxMaxAgeURL = url
+						}
+					}
+
+					return true
+				})
+
+				if firstItem {
+					fmt.Println("\t(no cache items)")
+					fmt.Println()
+					return true
+				}
+
+				// Display minimum MaxAge item
+				fmt.Println("\tMINIMUM MaxAge Item:")
+				fmt.Printf("\t\tURL: %s\n", minMaxAgeURL)
+				fmt.Printf("\t\tMaxAge: %s\n", formatDuration(minMaxAgeItem.MaxAge))
+				fmt.Printf("\t\tBaseMaxAge: %s\n", formatDuration(minMaxAgeItem.BaseMaxAge))
+
+				// Truncate hash for display
+				hashDisplay := minMaxAgeItem.ContentHash
+				if len(hashDisplay) > 12 {
+					hashDisplay = hashDisplay[:12] + "..."
+				}
+				fmt.Printf("\t\tContent Hash: %s\n", hashDisplay)
+				fmt.Printf("\t\tTimestamp: %s\n", formatTimestamp(minMaxAgeItem.Timestamp))
+				fmt.Printf("\t\tHit Count: %d\n", minMaxAgeItem.HitCount)
+				fmt.Printf("\t\tMiss Count: %d\n\n", minMaxAgeItem.MissCount)
+
+				// Display maximum MaxAge item
+				fmt.Println("\tMAXIMUM MaxAge Item:")
+				fmt.Printf("\t\tURL: %s\n", maxMaxAgeURL)
+				fmt.Printf("\t\tMaxAge: %s\n", formatDuration(maxMaxAgeItem.MaxAge))
+				fmt.Printf("\t\tBaseMaxAge: %s\n", formatDuration(maxMaxAgeItem.BaseMaxAge))
+
+				hashDisplay = maxMaxAgeItem.ContentHash
+				if len(hashDisplay) > 12 {
+					hashDisplay = hashDisplay[:12] + "..."
+				}
+				fmt.Printf("\t\tContent Hash: %s\n", hashDisplay)
+				fmt.Printf("\t\tTimestamp: %s\n", formatTimestamp(maxMaxAgeItem.Timestamp))
+				fmt.Printf("\t\tHit Count: %d\n", maxMaxAgeItem.HitCount)
+				fmt.Printf("\t\tMiss Count: %d\n\n", maxMaxAgeItem.MissCount)
 
 				return true
 			})
@@ -411,7 +539,7 @@ func main() {
 				for i, otp := range registrationOTPs {
 					fmt.Printf("  %d. %s\n", i+1, otp.ClientName)
 					fmt.Printf("     Key: %s\n", otp.OneTimeKey)
-					fmt.Printf("     Created: %s\n", otp.CreatedAt.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Created: %s\n", formatTimestamp(otp.CreatedAt.Unix()))
 					fmt.Printf("     Lifespan: %d days\n", otp.KeyLifespanDays)
 					if otp.RequestedBy != "" {
 						fmt.Printf("     Requested by: %s\n", otp.RequestedBy)
@@ -427,13 +555,13 @@ func main() {
 			} else {
 				for i, client := range registeredClients {
 					fmt.Printf("  %d. %s\n", i+1, client.ClientName)
-					fmt.Printf("     Registered: %s\n", client.RegisteredAt.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Registered: %s\n", formatTimestamp(client.RegisteredAt.Unix()))
 					if client.ExpiresAt != nil {
-						fmt.Printf("     Expires: %s\n", client.ExpiresAt.Format("2006-01-02 15:04:05"))
+						fmt.Printf("     Expires: %s\n", formatTimestamp(client.ExpiresAt.Unix()))
 					} else {
 						fmt.Printf("     Expires: Never\n")
 					}
-					fmt.Printf("     Last Used: %s\n", client.LastUsed.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Last Used: %s\n", formatTimestamp(client.LastUsed.Unix()))
 					fmt.Printf("     Key Lifespan: %d days\n", client.KeyLifespanDays)
 					fmt.Println()
 				}
@@ -454,7 +582,7 @@ func main() {
 						status = "Expired"
 					}
 					fmt.Printf("  %d. Session Token: %s...\n", i, token[:8])
-					fmt.Printf("     Expires: %s\n", expiresAt.Format("2006-01-02 15:04:05"))
+					fmt.Printf("     Expires: %s\n", formatTimestamp(expiresAt.Unix()))
 					fmt.Printf("     Status: %s\n", status)
 					fmt.Println()
 					i++
@@ -479,6 +607,7 @@ func main() {
 			fmt.Println("Commands:")
 			fmt.Println("\tcache - display the current cache")
 			fmt.Println("\tsummary - display a summary of the cache")
+			fmt.Println("\tlimits - display min/max MaxAge items per server")
 			fmt.Println("\twrite - write the cache to a file")
 			fmt.Println("\tregistrations - display registration requests, clients, and sessions")
 			fmt.Println("\treload - re-populate cache with core types from all servers")

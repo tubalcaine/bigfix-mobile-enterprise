@@ -331,21 +331,16 @@ func handleServersEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 
 	var servers []ServerInfo
 
+	// Fast server list without RAM calculation
+	// (RAM stats are available in /summary endpoint)
 	cache.ServerCache.Range(func(key, value interface{}) bool {
 		server := value.(*bfrest.BigFixServerCache)
-		var ramBytes int64
-
-		server.CacheMap.Range(func(key, value interface{}) bool {
-			item := value.(*bfrest.CacheItem)
-			ramBytes += int64(len(item.Json))
-			return true
-		})
 
 		servers = append(servers, ServerInfo{
 			Name:     server.ServerName,
-			RAMBytes: ramBytes,
-			RAMKB:    float64(ramBytes) / 1024.0,
-			RAMMB:    float64(ramBytes) / (1024.0 * 1024.0),
+			RAMBytes: 0,
+			RAMKB:    0.0,
+			RAMMB:    0.0,
 		})
 		return true
 	})
@@ -360,7 +355,7 @@ func handleSummaryEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 	if !requireAuth(c) {
 		return
 	}
-	
+
 	summary := make(map[string]interface{})
 	var totalSize int64
 
@@ -369,12 +364,34 @@ func handleSummaryEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		serverSummary := make(map[string]interface{})
 		count, current, expired := 0, 0, 0
 		var serverSize int64
+		var totalHits, totalMisses uint64
+		var maxAge, minAge uint64
+		firstItem := true
 
 		server.CacheMap.Range(func(key, value interface{}) bool {
 			v := value.(*bfrest.CacheItem)
 			count++
 			itemSize := int64(len(v.Json))
 			serverSize += itemSize
+
+			// Track hits and misses
+			totalHits += v.HitCount
+			totalMisses += v.MissCount
+
+			// Track MaxAge min/max
+			if firstItem {
+				maxAge = v.MaxAge
+				minAge = v.MaxAge
+				firstItem = false
+			} else {
+				if v.MaxAge > maxAge {
+					maxAge = v.MaxAge
+				}
+				if v.MaxAge < minAge {
+					minAge = v.MaxAge
+				}
+			}
+
 			if time.Now().Unix()-v.Timestamp > int64(server.MaxAge) {
 				expired++
 			} else {
@@ -389,6 +406,10 @@ func handleSummaryEndpoint(c *gin.Context, cache *bfrest.BigFixCache) {
 		serverSummary["ram_bytes"] = serverSize
 		serverSummary["ram_kb"] = float64(serverSize) / 1024.0
 		serverSummary["ram_mb"] = float64(serverSize) / (1024.0 * 1024.0)
+		serverSummary["max_age_min_seconds"] = minAge
+		serverSummary["max_age_max_seconds"] = maxAge
+		serverSummary["cache_hits"] = totalHits
+		serverSummary["cache_misses"] = totalMisses
 		summary[server.ServerName] = serverSummary
 		totalSize += serverSize
 
