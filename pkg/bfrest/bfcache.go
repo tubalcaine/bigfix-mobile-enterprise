@@ -263,6 +263,13 @@ func (cache *BigFixCache) Get(url string) (*CacheItem, error) {
 		// Fetch fresh data from server
 		newItem, err := retrieveBigFixData(url, sc)
 		if err != nil {
+			// If the resource was not found (404), remove the cache entry entirely
+			if IsNotFound(err) {
+				if cache.Debug != 0 {
+					fmt.Fprintf(os.Stderr, "  --> Resource not found (404), removing cache entry\n")
+				}
+				sc.CacheMap.Delete(url)
+			}
 			return nil, err
 		}
 
@@ -626,6 +633,13 @@ func (cache *BigFixCache) ForceGet(url string) (*CacheItem, error) {
 	// Always fetch fresh data from server
 	newItem, err := retrieveBigFixData(url, sc)
 	if err != nil {
+		// If the resource was not found (404), remove the cache entry entirely
+		if IsNotFound(err) {
+			if cache.Debug != 0 {
+				fmt.Fprintf(os.Stderr, "  --> Resource not found (404), removing cache entry\n")
+			}
+			sc.CacheMap.Delete(url)
+		}
 		return nil, err
 	}
 

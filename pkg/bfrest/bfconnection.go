@@ -18,6 +18,25 @@ type Pool struct {
 	mutex       sync.Mutex
 }
 
+// HTTPError represents an HTTP error response from the BigFix server
+type HTTPError struct {
+	StatusCode int
+	Status     string
+	URL        string
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("HTTP %d %s for URL: %s", e.StatusCode, e.Status, e.URL)
+}
+
+// IsNotFound returns true if the error is a 404 Not Found
+func IsNotFound(err error) bool {
+	if httpErr, ok := err.(*HTTPError); ok {
+		return httpErr.StatusCode == 404
+	}
+	return false
+}
+
 // BFConnection represents a connection configuration.
 type BFConnection struct {
 	URL      string
@@ -62,6 +81,15 @@ func (c *BFConnection) Get(urlStr string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+
+	// Check for non-2xx status codes
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", &HTTPError{
+			StatusCode: resp.StatusCode,
+			Status:     resp.Status,
+			URL:        urlStr,
+		}
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

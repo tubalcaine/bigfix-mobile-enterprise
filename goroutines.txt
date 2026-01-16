@@ -1,0 +1,106 @@
+BigFix Mobile Enterprise - Goroutine Analysis
+==============================================
+
+This document describes the goroutines running in the bigfix-mobile-enterprise
+application when it's up and running in a steady state.
+
+## Persistent Goroutines (Long-Running)
+
+### 1. Registration Directory Monitor
+Location: cmd/bem/main.go:142, registration.go:108-134
+Purpose:
+- Watches the configured registration directory for new .json files using fsnotify
+- Automatically processes registration OTP files when they appear
+- Runs indefinitely monitoring file system events
+
+### 2. Periodic Session Cleanup
+Location: cmd/bem/main.go:145-151
+Purpose:
+- Uses a ticker that fires every 30 minutes
+- Cleans up expired OTP authentication sessions from the activeSessions map
+- Prevents memory leaks from abandoned sessions
+
+### 3. Cache Population (per server)
+Location: cmd/bem/main.go:174
+Purpose:
+- One goroutine per configured BigFix server in bem.json
+- Populates cache with core types: actions, computers, sites, and their content
+- Each spawns many short-lived child goroutines (see "Transient" section below)
+- Initial population at startup, then waits
+
+### 4. Garbage Collector
+Location: cmd/bem/main.go:182, pkg/bfrest/bfcache.go:743-755
+Purpose:
+- Uses a ticker with configurable interval (default: 15 seconds)
+- Sweeps through all cache items across all servers
+- Clears JSON data from expired cache entries to free memory while preserving metadata
+- Runs continuously for the lifetime of the application
+
+### 5. HTTPS Server
+Location: cmd/bem/main.go:217-223
+Purpose:
+- Gin HTTP server handling all REST API endpoints
+- Listens on the configured port with TLS
+- Spawns handler goroutines per request (managed by Go's HTTP server)
+
+## Transient/Short-Lived Goroutines
+
+### 6. Cache Data Fetchers
+Location: pkg/bfrest/bfcache.go:520-570
+Purpose:
+- Spawned during PopulateCoreTypes() for each:
+  * Action resource + action status (2 per action)
+  * Computer resource (1 per computer)
+  * Site resource + site content (2 per site, across CustomSite, ExternalSite,
+    OperatorSite, ActionSite)
+- Can spawn dozens to hundreds depending on BigFix server content
+- Short-lived: exit after fetching data
+
+### 7. Expired Session Cleanup
+Location: cmd/bem/auth.go:60-64
+Purpose:
+- Spawned on-demand when isValidSession() detects an expired session
+- Removes the expired session from the map
+- Exits immediately after cleanup
+
+### 8. Client Last-Used Time Updater
+Location: cmd/bem/auth.go:147-157
+Purpose:
+- Spawned when a client successfully authenticates with a valid key
+- Updates the LastUsed timestamp and persists to disk
+- Exits immediately after update
+
+### 9. Manual Cache Reload
+Location: cmd/bem/main.go:599
+Purpose:
+- Spawned when user types 'reload' in the CLI
+- One goroutine per configured BigFix server
+- Re-populates cache with fresh data (spawns child goroutines like #6)
+- Only created on user command, not automatic
+
+## Steady State Count
+
+For a typical configuration with N BigFix servers, you'll have:
+
+- 5 persistent goroutines (registration monitor, session cleanup, garbage
+  collector, HTTPS server, main CLI loop)
+- N long-running goroutines (1 cache population per server - these may idle
+  after initial population)
+- Variable transient goroutines depending on:
+  * BigFix server content size (actions, computers, sites)
+  * Incoming HTTP requests
+  * Authentication attempts
+  * Manual reload commands
+
+## Architecture Notes
+
+The application is designed for efficient concurrency with most goroutines being
+short-lived workers that exit after completing their tasks. The persistent
+goroutines handle:
+
+1. System monitoring (registration directory, session cleanup)
+2. Periodic maintenance (garbage collection)
+3. Server operation (HTTPS endpoint handling)
+
+This design ensures the application remains responsive while managing resources
+efficiently across multiple BigFix server connections.

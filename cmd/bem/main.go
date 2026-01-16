@@ -603,6 +603,61 @@ func main() {
 			continue
 		}
 
+		if query == "clean" {
+			fmt.Println("Cleaning cache by validating all existing entries...")
+
+			var totalEntries, updated, deleted, errors int
+
+			// Iterate through all servers
+			cache.ServerCache.Range(func(key, value interface{}) bool {
+				server := value.(*bfrest.BigFixServerCache)
+				fmt.Printf("\nProcessing server: %s\n", server.ServerName)
+
+				var serverUpdated, serverDeleted, serverErrors int
+
+				// Collect all URLs first (to avoid modifying during iteration)
+				var urls []string
+				server.CacheMap.Range(func(urlKey, value interface{}) bool {
+					urls = append(urls, urlKey.(string))
+					return true
+				})
+
+				totalEntries += len(urls)
+
+				// Process each URL
+				for _, url := range urls {
+					_, err := cache.ForceGet(url)
+					if err != nil {
+						// Check if it was deleted (404)
+						if bfrest.IsNotFound(err) {
+							serverDeleted++
+						} else {
+							serverErrors++
+						}
+					} else {
+						serverUpdated++
+					}
+				}
+
+				fmt.Printf("  Updated: %d, Deleted: %d, Errors: %d\n",
+					serverUpdated, serverDeleted, serverErrors)
+
+				updated += serverUpdated
+				deleted += serverDeleted
+				errors += serverErrors
+
+				return true
+			})
+
+			fmt.Printf("\nCache cleaning complete:\n")
+			fmt.Printf("  Total entries processed: %d\n", totalEntries)
+			fmt.Printf("  Updated: %d\n", updated)
+			fmt.Printf("  Deleted (404): %d\n", deleted)
+			fmt.Printf("  Errors (kept): %d\n", errors)
+
+			continue
+		}
+
 		if query == "help" {
 			fmt.Println("Commands:")
 			fmt.Println("\tcache - display the current cache")
@@ -611,6 +666,7 @@ func main() {
 			fmt.Println("\twrite - write the cache to a file")
 			fmt.Println("\tregistrations - display registration requests, clients, and sessions")
 			fmt.Println("\treload - re-populate cache with core types from all servers")
+			fmt.Println("\tclean - validate all cache entries, removing 404s")
 			fmt.Println("\thelp - display this help")
 			fmt.Println("\texit - terminate the program")
 			fmt.Println("\t<url> - retrieve the url from the cache")
